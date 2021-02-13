@@ -126,27 +126,27 @@ inline bool operator!=(const Point &lhs, const Point &rhs)
     return !(lhs == rhs);
 }
 
-enum class BorderPosition { top, right };
+enum class ReadDirection { topToBottom, rightToLeft };
 
-void nextDirection(BorderPosition &borderPosition)
+void nextDirection(ReadDirection &readDirection)
 {
-    assert(borderPosition != BorderPosition::right);
-    int dir = static_cast<int>(borderPosition);
+    assert(readDirection != ReadDirection::rightToLeft);
+    int dir = static_cast<int>(readDirection);
     ++dir;
-    borderPosition = static_cast<BorderPosition>(dir);
+    readDirection = static_cast<ReadDirection>(dir);
 }
 
-void advanceToNextPosition(Point &point, BorderPosition borderPosition,
+void advanceToNextPosition(Point &point, ReadDirection readDirection,
                            int clueIdx)
 {
     if (clueIdx == 0) {
         return;
     }
-    switch (borderPosition) {
-    case BorderPosition::top:
+    switch (readDirection) {
+    case ReadDirection::topToBottom:
         ++point.x;
         break;
-    case BorderPosition::right:
+    case ReadDirection::rightToLeft:
         ++point.y;
         break;
     }
@@ -157,7 +157,7 @@ public:
     BorderIterator(std::size_t boardSize);
 
     Point point() const;
-    BorderPosition borderPosition() const;
+    ReadDirection readDirection() const;
 
     BorderIterator &operator++();
 
@@ -165,7 +165,7 @@ private:
     int mIdx = 0;
     std::size_t mBoardSize;
     Point mPoint{0, 0};
-    BorderPosition mReadDirection{BorderPosition::top};
+    ReadDirection mReadDirection{ReadDirection::topToBottom};
 };
 
 BorderIterator::BorderIterator(std::size_t boardSize) : mBoardSize{boardSize}
@@ -177,7 +177,7 @@ Point BorderIterator::point() const
     return mPoint;
 }
 
-BorderPosition BorderIterator::borderPosition() const
+ReadDirection BorderIterator::readDirection() const
 {
     return mReadDirection;
 }
@@ -211,8 +211,6 @@ Board::Board(int size)
     : skyscrapers{makeSkyscrapers(size)}, nopes{makeNopes(size)}
 {
 }
-
-Board board{4};
 
 std::vector<std::vector<int>> Board::makeSkyscrapers(int size)
 {
@@ -260,9 +258,8 @@ void debug_print(Board &board, const std::string &title = "")
     std::cout << '\n';
 }
 
-struct Field {
+class Field {
 public:
-    Field(Board &board, const Point &point);
     Field(int &skyscraper, Nopes &nopes);
 
     void insertSkyscraper(int skyscraper);
@@ -274,24 +271,18 @@ public:
     int skyscraper() const;
     Nopes nopes() const;
 
-    Point point() const;
     bool hasSkyscraper() const;
-    void markHasSkyscraper();
 
-    void transformToSkyscraper();
+    std::optional<int> lastMissingNope() const;
 
 private:
-    Board *mBoard;
-    Point mPoint;
     int *mSkyscraper;
     Nopes *mNopes;
     bool mHasSkyscraper = false;
 };
 
-Field::Field(Board &board, const Point &point)
-    : mBoard{&board}, mPoint{point},
-      mSkyscraper{&mBoard->skyscrapers[mPoint.y][mPoint.x]},
-      mNopes{&mBoard->nopes[mPoint.y][mPoint.x]}
+Field::Field(int &skyscraper, Nopes &nopes)
+    : mSkyscraper{&skyscraper}, mNopes{&nopes}
 {
 }
 
@@ -335,42 +326,31 @@ Nopes Field::nopes() const
     return *mNopes;
 }
 
-Point Field::point() const
-{
-    return mPoint;
-}
-
 bool Field::hasSkyscraper() const
 {
     return mHasSkyscraper;
 }
 
-void Field::markHasSkyscraper()
-{
-    mHasSkyscraper = true;
-}
-
-void Field::transformToSkyscraper()
+std::optional<int> Field::lastMissingNope() const
 {
     if (!mNopes->sizeReached()) {
-        return;
+        return {};
     }
-    auto missingSkyscraper = mNopes->missingNumberInSequence();
-    insertSkyscraper(missingSkyscraper);
+    return mNopes->missingNumberInSequence();
 }
 
 Point calcPosition(std::size_t idx, const Point &startPoint,
-                   const BorderPosition &borderPosition)
+                   const ReadDirection &readDirection)
 {
     Point point = startPoint;
     if (idx == 0) {
         return startPoint;
     }
-    switch (borderPosition) {
-    case BorderPosition::top:
+    switch (readDirection) {
+    case ReadDirection::topToBottom:
         point.y += idx;
         break;
-    case BorderPosition::right:
+    case ReadDirection::rightToLeft:
         point.x -= idx;
         break;
     }
@@ -379,171 +359,71 @@ Point calcPosition(std::size_t idx, const Point &startPoint,
 
 std::vector<std::vector<Field>> makeFields(Board &board)
 {
-    std::vector<std::vector<Field>> fields;
-    fields.reserve(board.skyscrapers.size() * board.skyscrapers[0].size());
-
+    std::vector<std::vector<Field>> fields(board.skyscrapers.size());
+    for (auto &row : fields) {
+        row.reserve(fields.size());
+    }
     for (std::size_t y = 0; y < board.skyscrapers.size(); ++y) {
         for (std::size_t x = 0; x < board.skyscrapers[y].size(); ++x) {
-            fields.emplace_back(
-                Field(board.skyscrapers[y][x], board.nopes[y][x]));
+            fields[y].emplace_back(
+                Field{board.skyscrapers[y][x], board.nopes[y][x]});
         }
-    }
-    return fields;
-}
-
-std::vector<Field> makeFields(Board &board, const Point &startPoint,
-                              const BorderPosition &borderPosition)
-{
-    std::vector<Field> fields;
-    fields.reserve(board.skyscrapers.size());
-    for (std::size_t i = 0; i < board.skyscrapers.size(); ++i) {
-        auto point = calcPosition(i, startPoint, borderPosition);
-        fields.push_back(Field{board, point});
     }
     return fields;
 }
 
 class Row {
 public:
-    Row(const std::vector<Field> &fields);
-
-    template <typename RawIteratorType> struct RawIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = RawIteratorType;
-        using pointer = value_type *;
-        using reference = value_type &;
-
-        RawIterator(pointer ptr) : mPtr(ptr)
-        {
-        }
-
-        reference operator*() const
-        {
-            return *mPtr;
-        }
-        pointer operator->()
-        {
-            return mPtr;
-        }
-
-        RawIterator &operator++()
-        {
-            mPtr++;
-            return *this;
-        }
-        RawIterator operator++(int)
-        {
-            RawIterator tmp = *this;
-            ++(*this);
-            return tmp;
-        }
-
-        friend bool operator==(const RawIterator &a, const RawIterator &b)
-        {
-            return a.mPtr == b.mPtr;
-        };
-        friend bool operator!=(const RawIterator &a, const RawIterator &b)
-        {
-            return a.mPtr != b.mPtr;
-        };
-
-    private:
-        pointer mPtr;
-    };
-
-    template <typename RawReverseIteratorType> struct RawReverseIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = RawReverseIteratorType;
-        using pointer = value_type *;
-        using reference = value_type &;
-
-        RawReverseIterator(pointer ptr) : mPtr(ptr)
-        {
-        }
-
-        reference operator*() const
-        {
-            return *mPtr;
-        }
-        pointer operator->()
-        {
-            return mPtr;
-        }
-
-        RawReverseIterator &operator++()
-        {
-            mPtr--;
-            return *this;
-        }
-        RawReverseIterator operator++(int)
-        {
-            RawReverseIterator tmp = *this;
-            --mPtr;
-            return tmp;
-        }
-
-        friend bool operator==(const RawReverseIterator &a,
-                               const RawReverseIterator &b)
-        {
-            return a.mPtr == b.mPtr;
-        };
-        friend bool operator!=(const RawReverseIterator &a,
-                               const RawReverseIterator &b)
-        {
-            return a.mPtr != b.mPtr;
-        };
-
-    private:
-        pointer mPtr;
-    };
-
-    typedef RawIterator<Field> iterator;
-    typedef RawIterator<const Field> const_iterator;
-
-    typedef RawReverseIterator<Field> reverse_iterator;
-    typedef RawReverseIterator<const Field> const_reverse_iterator;
-
-    iterator begin()
-    {
-        return iterator(&mFields[0]);
-    }
-    iterator end()
-    {
-        return iterator(&mFields[mFields.size()]);
-    }
-
-    const_iterator cbegin() const
-    {
-        return const_iterator(&mFields[0]);
-    }
-    const_iterator cend() const
-    {
-        return const_iterator(&mFields[mFields.size()]);
-    }
-
-    reverse_iterator rbegin()
-    {
-        return reverse_iterator(&mFields[mFields.size() - 1]);
-    }
-    reverse_iterator rend()
-    {
-        return reverse_iterator(&mFields[-1]);
-    }
-
-    const_reverse_iterator crbegin() const
-    {
-        return const_reverse_iterator(&mFields[mFields.size() - 1]);
-    }
-    const_reverse_iterator crend() const
-    {
-        return const_reverse_iterator(&mFields[-1]);
-    }
+    Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
+        const ReadDirection &readDirection);
 
     std::size_t size() const;
 
     void addCrossingRows(Row *crossingRow);
+
+    bool hasOnlyOneNopeField() const;
+    void addLastMissingSkyscraper();
+
+    void addNopesToAllNopeFields(int nope);
+
+    bool allFieldsContainSkyscraper() const;
+
+    int skyscraperCount() const;
+    int nopeCount(int nope) const;
+
+    void guessSkyscraperOutOfNeighbourNopes();
+
+    bool isValidPermutation(const std::vector<int> &permutation) const;
+
+    enum class Direction { front, back };
+
+    bool hasSkyscrapers(const std::vector<int> &skyscrapers,
+                        Direction direction) const;
+    bool hasNopes(const std::vector<std::vector<int>> &nopes,
+                  Direction direction) const;
+
+    void addSkyscrapers(const std::vector<int> &skyscrapers,
+                        Direction direction);
+    void addNopes(const std::vector<std::vector<int>> &nopes,
+                  Direction direction);
+
+private:
+    template <typename SkyIterator, typename FieldIterator>
+    bool hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
+                        FieldIterator fieldItBegin,
+                        FieldIterator fieldItEnd) const;
+
+    template <typename NopesIterator, typename FieldIterator>
+    bool hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
+                  FieldIterator fieldItBegin, FieldIterator fieldItEnd) const;
+
+    template <typename SkyIterator, typename FieldIterator>
+    void addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
+                        FieldIterator fieldItBegin, FieldIterator fieldItEnd);
+
+    template <typename NopesIterator, typename FieldIterator>
+    void addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
+                  FieldIterator fieldItBegin, FieldIterator fieldItEnd);
 
     template <typename IteratorType>
     void insertSkyscraper(IteratorType it, int skyscraper);
@@ -553,27 +433,13 @@ public:
     template <typename IteratorType>
     void insertNopes(IteratorType it, const std::vector<int> &nopes);
 
-    iterator toIterator(const Point &point);
+    int getIdx(std::vector<Field *>::const_iterator cit) const;
+    int getIdx(std::vector<Field *>::const_reverse_iterator crit) const;
 
-    template <typename IteratorType>
-    void addMissingSkyscraperMark(IteratorType it);
+    std::vector<Field *> getRowFields(const ReadDirection &readDirection,
+                                      std::vector<std::vector<Field>> &fields,
+                                      const Point &startPoint);
 
-    void addNopesToAllNopeFields(int nope);
-
-    int getIdx(iterator it);
-    int getIdx(reverse_iterator rit);
-
-    bool hasOnlyOneNopeField() const;
-    void addLastMissingSkyscraper();
-
-    bool allFieldsContainSkyscraper() const;
-
-    int skyscraperCount() const;
-    int nopeCount(int nope) const;
-
-    void guessSkyscraperOutOfNeighbourNopes();
-
-private:
     bool onlyOneFieldWithoutNope(int nope) const;
     std::optional<int> nopeValueInAllButOneField() const;
 
@@ -582,153 +448,76 @@ private:
     bool hasSkyscraper(int skyscraper) const;
 
     std::vector<Row *> mCrossingRows;
-    std::vector<Field> mFields;
+    std::vector<Field *> mRowFields;
 };
 
-Row::Row(const std::vector<Field> &fields) : mFields{fields}
+Row::Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
+         const ReadDirection &readDirection)
+    : mRowFields{getRowFields(readDirection, fields, startPoint)}
 {
 }
 
 std::size_t Row::size() const
 {
-    return mFields.size();
+    return mRowFields.size();
 }
 
 void Row::addCrossingRows(Row *crossingRow)
 {
     assert(crossingRow != nullptr);
-    assert(mCrossingRows.size() < mFields.size());
+    assert(mCrossingRows.size() < size());
     mCrossingRows.push_back(crossingRow);
-}
-
-template <typename IteratorType>
-void Row::insertSkyscraper(IteratorType it, int skyscraper)
-{
-    assert(mCrossingRows.size() == mFields.size());
-
-    if (it->hasSkyscraper()) {
-        return;
-    }
-    it->insertSkyscraper(skyscraper);
-    if (hasOnlyOneNopeField()) {
-        addLastMissingSkyscraper();
-    }
-    debug_print(board);
-    addNopesToAllNopeFields(skyscraper);
-    debug_print(board);
-
-    int idx = getIdx(it);
-    auto oppositeIt = mCrossingRows[idx]->toIterator(it->point());
-    oppositeIt->markHasSkyscraper();
-    if (mCrossingRows[idx]->hasOnlyOneNopeField()) {
-        mCrossingRows[idx]->addLastMissingSkyscraper();
-        debug_print(board);
-    }
-
-    mCrossingRows[idx]->addNopesToAllNopeFields(skyscraper);
-    debug_print(board);
-}
-
-template <typename IteratorType> void Row::insertNope(IteratorType it, int nope)
-{
-    if (it->hasSkyscraper()) {
-        return;
-    }
-    if (it->nopes().contains(nope)) {
-        return;
-    }
-    it->insertNope(nope);
-
-    it->transformToSkyscraper();
-    if (onlyOneFieldWithoutNope(nope)) {
-        insertSkyscraperToFirstFieldWithoutNope(nope);
-    }
-
-    int idx = getIdx(it);
-
-    if (mCrossingRows[idx]->onlyOneFieldWithoutNope(nope)) {
-        mCrossingRows[idx]->insertSkyscraperToFirstFieldWithoutNope(nope);
-    }
-}
-
-template <typename IteratorType>
-void Row::insertNopes(IteratorType it, const std::vector<int> &nopes)
-{
-    for (const auto &nope : nopes) {
-        insertNope(it, nope);
-    }
-}
-
-Row::iterator Row::toIterator(const Point &point)
-{
-    for (auto it = begin(); it != end(); ++it) {
-        if (it->point() == point) {
-            return it;
-        }
-    }
-    return end();
-}
-
-void Row::addNopesToAllNopeFields(int nope)
-{
-    for (auto it = begin(); it != end(); ++it) {
-        if (it->hasSkyscraper()) {
-            continue;
-        }
-        insertNope(it, nope);
-    }
-}
-
-int Row::getIdx(Row::iterator it)
-{
-    return std::distance(begin(), it);
-}
-
-int Row::getIdx(Row::reverse_iterator rit)
-{
-    return mFields.size() - std::distance(rbegin(), rit) - 1;
 }
 
 bool Row::hasOnlyOneNopeField() const
 {
-    return skyscraperCount() == static_cast<int>(mFields.size() - 1);
+    return skyscraperCount() == static_cast<int>(size() - 1);
 }
 
 void Row::addLastMissingSkyscraper()
 {
     assert(hasOnlyOneNopeField());
 
-    iterator nopeFieldIt = end();
+    auto nopeFieldIt = mRowFields.end();
     std::vector<int> sequence;
-    sequence.reserve(mFields.size() - 1);
+    sequence.reserve(size() - 1);
 
-    for (auto it = begin(); it != end(); ++it) {
-        if (it->hasSkyscraper()) {
-            sequence.emplace_back(it->skyscraper());
+    for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
+        if ((*it)->hasSkyscraper()) {
+            sequence.emplace_back((*it)->skyscraper());
         }
         else {
             nopeFieldIt = it;
         }
     }
-    assert(nopeFieldIt != end());
+    assert(nopeFieldIt != mRowFields.end());
     assert(skyscraperCount() == static_cast<int>(sequence.size()));
     auto missingValue =
         missingNumberInSequence(sequence.begin(), sequence.end());
-    assert(missingValue >= 0 &&
-           missingValue <= static_cast<int>(mFields.size()));
+    assert(missingValue >= 0 && missingValue <= static_cast<int>(size()));
     insertSkyscraper(nopeFieldIt, missingValue);
+}
+
+void Row::addNopesToAllNopeFields(int nope)
+{
+    for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
+        if ((*it)->hasSkyscraper()) {
+            continue;
+        }
+        insertNope(it, nope);
+    }
 }
 
 bool Row::allFieldsContainSkyscraper() const
 {
-    return skyscraperCount() == static_cast<int>(mFields.size());
+    return skyscraperCount() == static_cast<int>(size());
 }
 
 int Row::skyscraperCount() const
 {
     int count = 0;
-    for (auto cit = cbegin(); cit != cend(); ++cit) {
-        if (cit->hasSkyscraper()) {
+    for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
+        if ((*cit)->hasSkyscraper()) {
             ++count;
         }
     }
@@ -738,8 +527,8 @@ int Row::skyscraperCount() const
 int Row::nopeCount(int nope) const
 {
     int count = 0;
-    for (auto cit = cbegin(); cit != cend(); ++cit) {
-        if (cit->nopes().contains(nope)) {
+    for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
+        if ((*cit)->nopes().contains(nope)) {
             ++count;
         }
     }
@@ -757,16 +546,243 @@ void Row::guessSkyscraperOutOfNeighbourNopes()
     }
 }
 
+bool Row::isValidPermutation(const std::vector<int> &permutation) const
+{
+    assert(permutation.size() == size());
+
+    auto permIt = permutation.cbegin();
+    for (auto fieldIt = mRowFields.cbegin();
+         fieldIt != mRowFields.cend() && permIt != permutation.end();
+         ++fieldIt, ++permIt) {
+
+        if ((*fieldIt)->hasSkyscraper()) {
+            if ((*fieldIt)->skyscraper() != *permIt) {
+                return false;
+            }
+        }
+        else if (!(*fieldIt)->nopes().isEmpty()) {
+            if ((*fieldIt)->nopes().contains(*permIt)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool Row::hasSkyscrapers(const std::vector<int> &skyscrapers,
+                         Row::Direction direction) const
+{
+    if (direction == Direction::front) {
+        return hasSkyscrapers(skyscrapers.cbegin(), skyscrapers.cend(),
+                              mRowFields.cbegin(), mRowFields.cend());
+    }
+    return hasSkyscrapers(skyscrapers.cbegin(), skyscrapers.cend(),
+                          mRowFields.crbegin(), mRowFields.crend());
+}
+
+bool Row::hasNopes(const std::vector<std::vector<int>> &nopes,
+                   Direction direction) const
+{
+    if (direction == Direction::front) {
+        return hasNopes(nopes.cbegin(), nopes.cend(), mRowFields.cbegin(),
+                        mRowFields.cend());
+    }
+    return hasNopes(nopes.cbegin(), nopes.cend(), mRowFields.crbegin(),
+                    mRowFields.crend());
+}
+
+void Row::addSkyscrapers(const std::vector<int> &skyscrapers,
+                         Direction direction)
+{
+    if (direction == Direction::front) {
+        addSkyscrapers(skyscrapers.begin(), skyscrapers.end(),
+                       mRowFields.begin(), mRowFields.end());
+    }
+    else {
+        addSkyscrapers(skyscrapers.begin(), skyscrapers.end(),
+                       mRowFields.rbegin(), mRowFields.rend());
+    }
+}
+void Row::addNopes(const std::vector<std::vector<int>> &nopes,
+                   Direction direction)
+{
+    if (direction == Direction::front) {
+        addNopes(nopes.begin(), nopes.end(), mRowFields.begin(),
+                 mRowFields.end());
+    }
+    else {
+        addNopes(nopes.begin(), nopes.end(), mRowFields.rbegin(),
+                 mRowFields.rend());
+    }
+}
+
+template <typename SkyIterator, typename FieldIterator>
+bool Row::hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
+                         FieldIterator fieldItBegin,
+                         FieldIterator fieldItEnd) const
+{
+    auto skyIt = skyItBegin;
+    for (auto fieldIt = fieldItBegin;
+         fieldIt != fieldItEnd && skyIt != skyItEnd; ++fieldIt, ++skyIt) {
+        if (*skyIt == 0 && (*fieldIt)->hasSkyscraper()) {
+            continue;
+        }
+        if ((*fieldIt)->skyscraper() != *skyIt) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename NopesIterator, typename FieldIterator>
+bool Row::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
+                   FieldIterator fieldItBegin, FieldIterator fieldItEnd) const
+{
+    auto nopesIt = nopesItBegin;
+    for (auto fieldIt = fieldItBegin;
+         fieldIt != fieldItEnd && nopesIt != nopesItEnd; ++fieldIt, ++nopesIt) {
+
+        if (nopesIt->empty()) {
+            continue;
+        }
+        if ((*fieldIt)->hasSkyscraper()) {
+            return false;
+        }
+        if (!(*fieldIt)->nopes().contains(*nopesIt)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename SkyIterator, typename FieldIterator>
+void Row::addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
+                         FieldIterator fieldItBegin, FieldIterator fieldItEnd)
+{
+    auto skyIt = skyItBegin;
+    for (auto fieldIt = fieldItBegin;
+         fieldIt != fieldItEnd && skyIt != skyItEnd; ++fieldIt, ++skyIt) {
+        if (*skyIt == 0) {
+            continue;
+        }
+        insertSkyscraper(fieldIt, *skyIt);
+    }
+}
+
+template <typename NopesIterator, typename FieldIterator>
+void Row::addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
+                   FieldIterator fieldItBegin, FieldIterator fieldItEnd)
+{
+    auto nopesIt = nopesItBegin;
+    for (auto fieldIt = fieldItBegin;
+         fieldIt != fieldItEnd && nopesIt != nopesItEnd; ++fieldIt, ++nopesIt) {
+        if (nopesIt->empty()) {
+            continue;
+        }
+        insertNopes(fieldIt, *nopesIt);
+    }
+}
+
+template <typename FieldIterator>
+void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
+{
+    assert(mCrossingRows.size() == size());
+
+    if ((*fieldIt)->hasSkyscraper()) {
+        return;
+    }
+    (*fieldIt)->insertSkyscraper(skyscraper);
+
+    if (hasOnlyOneNopeField()) {
+        addLastMissingSkyscraper();
+    }
+    addNopesToAllNopeFields(skyscraper);
+
+    int idx = getIdx(fieldIt);
+
+    if (mCrossingRows[idx]->hasOnlyOneNopeField()) {
+        mCrossingRows[idx]->addLastMissingSkyscraper();
+    }
+
+    mCrossingRows[idx]->addNopesToAllNopeFields(skyscraper);
+}
+
+template <typename FieldIterator>
+void Row::insertNope(FieldIterator fieldIt, int nope)
+{
+    if ((*fieldIt)->hasSkyscraper()) {
+        return;
+    }
+    if ((*fieldIt)->nopes().contains(nope)) {
+        return;
+    }
+    (*fieldIt)->insertNope(nope);
+
+    auto optlastMissingNope = (*fieldIt)->lastMissingNope();
+    if (optlastMissingNope) {
+        insertSkyscraper(fieldIt, *optlastMissingNope);
+    }
+
+    if (onlyOneFieldWithoutNope(nope)) {
+        insertSkyscraperToFirstFieldWithoutNope(nope);
+    }
+
+    int idx = getIdx(fieldIt);
+
+    if (mCrossingRows[idx]->onlyOneFieldWithoutNope(nope)) {
+        mCrossingRows[idx]->insertSkyscraperToFirstFieldWithoutNope(nope);
+    }
+}
+
+template <typename IteratorType>
+void Row::insertNopes(IteratorType it, const std::vector<int> &nopes)
+{
+    for (const auto &nope : nopes) {
+        insertNope(it, nope);
+    }
+}
+
+int Row::getIdx(std::vector<Field *>::const_iterator cit) const
+{
+    return std::distance(mRowFields.cbegin(), cit);
+}
+
+int Row::getIdx(std::vector<Field *>::const_reverse_iterator crit) const
+{
+    return size() - std::distance(mRowFields.crbegin(), crit) - 1;
+}
+
+std::vector<Field *>
+Row::getRowFields(const ReadDirection &readDirection,
+                  std::vector<std::vector<Field>> &boardFields,
+                  const Point &startPoint)
+{
+    std::vector<Field *> fields;
+    fields.reserve(boardFields.size());
+    std::size_t x = startPoint.x;
+    std::size_t y = startPoint.y;
+    for (std::size_t i = 0; i < boardFields.size(); ++i) {
+        fields.emplace_back(&boardFields[y][x]);
+
+        if (readDirection == ReadDirection::topToBottom) {
+            ++y;
+        }
+        else {
+            --x;
+        }
+    }
+    return fields;
+}
+
 bool Row::onlyOneFieldWithoutNope(int nope) const
 {
-    auto cit = std::find_if(cbegin(), cend(), [nope](const Field &field) {
-        return field.skyscraper() == nope;
-    });
-    if (cit != cend()) {
+    auto cit = std::find_if(
+        mRowFields.cbegin(), mRowFields.cend(),
+        [nope](const auto &field) { return field->skyscraper() == nope; });
+    if (cit != mRowFields.cend()) {
         return false;
     }
-    if (nopeCount(nope) <
-        static_cast<int>(mFields.size()) - skyscraperCount() - 1) {
+    if (nopeCount(nope) < static_cast<int>(size()) - skyscraperCount() - 1) {
         return false;
     }
     return true;
@@ -776,9 +792,9 @@ std::optional<int> Row::nopeValueInAllButOneField() const
 {
     std::unordered_map<int, int> nopeAndCount;
 
-    for (auto cit = cbegin(); cit != cend(); ++cit) {
-        if (!cit->hasSkyscraper()) {
-            auto nopes = cit->nopes().containing();
+    for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
+        if (!(*cit)->hasSkyscraper()) {
+            auto nopes = (*cit)->nopes().containing();
             for (const auto &nope : nopes) {
                 if (hasSkyscraper(nope)) {
                     continue;
@@ -788,8 +804,7 @@ std::optional<int> Row::nopeValueInAllButOneField() const
         }
     }
     for (auto cit = nopeAndCount.cbegin(); cit != nopeAndCount.end(); ++cit) {
-        if (cit->second ==
-            static_cast<int>(mFields.size()) - skyscraperCount() - 1) {
+        if (cit->second == static_cast<int>(size()) - skyscraperCount() - 1) {
             return {cit->first};
         }
     }
@@ -798,11 +813,11 @@ std::optional<int> Row::nopeValueInAllButOneField() const
 
 void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
 {
-    for (auto it = begin(); it != end(); ++it) {
-        if (it->hasSkyscraper()) {
+    for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
+        if ((*it)->hasSkyscraper()) {
             continue;
         }
-        if (!it->nopes().contains(nope)) {
+        if (!(*it)->nopes().contains(nope)) {
             insertSkyscraper(it, nope);
             return; // there can be max one skyscraper per row;
         }
@@ -811,8 +826,8 @@ void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
 
 bool Row::hasSkyscraper(int skyscraper) const
 {
-    for (const auto &field : mFields) {
-        if (field.skyscraper() == skyscraper) {
+    for (const auto &field : mRowFields) {
+        if (field->skyscraper() == skyscraper) {
             return true;
         }
     }
@@ -867,31 +882,8 @@ private:
     FieldElements
     getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
 
-    bool isValidPermutation(const std::vector<int> &permutation) const;
-
-    template <typename RowIterator>
-    void addElementsFromCurrentElementsAndClue(int clue, RowIterator rowItBegin,
-                                               RowIterator rowItEnd);
-
-    template <typename SkyIterator, typename RowIterator>
-    bool hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                        RowIterator rowItBegin, RowIterator rowItEnd);
-
-    template <typename NopesIterator, typename RowIterator>
-    bool hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                  RowIterator rowItBegin, RowIterator rowItEnd);
-
-    template <typename SkyIterator, typename RowIterator>
-    void addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                        RowIterator rowItBegin, RowIterator rowItEnd);
-
-    template <typename NopesIterator, typename RowIterator>
-    void addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                  RowIterator rowItBegin, RowIterator rowItEnd);
-
     std::vector<std::vector<int>> mPossiblePermutations;
     Row *mRow;
-    const CluePair mCluePair;
 };
 
 Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
@@ -902,12 +894,9 @@ Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
     }
     auto possibleBuildings = getPossibleBuildings();
     auto fieldElements = getFieldElements(possibleBuildings);
-    addSkyscrapers(fieldElements.skyscrapers.cbegin(),
-                   fieldElements.skyscrapers.cend(), mRow->begin(),
-                   mRow->end());
 
-    addNopes(fieldElements.nopes.cbegin(), fieldElements.nopes.cend(),
-             mRow->begin(), mRow->end());
+    mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
+    mRow->addNopes(fieldElements.nopes, Row::Direction::front);
 }
 
 void Slice::guessSkyscraperOutOfNeighbourNopes()
@@ -928,11 +917,9 @@ void Slice::solveFromPossiblePermutations()
     while (reducePossiblePermutations()) {
         auto possibleBuildings = getPossibleBuildings();
         auto fieldElements = getFieldElements(possibleBuildings);
-        addSkyscrapers(fieldElements.skyscrapers.cbegin(),
-                       fieldElements.skyscrapers.cend(), mRow->begin(),
-                       mRow->end());
-        addNopes(fieldElements.nopes.cbegin(), fieldElements.nopes.cend(),
-                 mRow->begin(), mRow->end());
+
+        mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
+        mRow->addNopes(fieldElements.nopes, Row::Direction::front);
     }
 }
 
@@ -943,7 +930,7 @@ bool Slice::reducePossiblePermutations()
 
     while (it != mPossiblePermutations.end()) {
 
-        if (!isValidPermutation(*it)) {
+        if (!mRow->isValidPermutation(*it)) {
             it = mPossiblePermutations.erase(it);
         }
         else {
@@ -994,107 +981,17 @@ Slice::getFieldElements(const std::vector<std::set<int>> &possibleBuildings)
     return fieldElements;
 }
 
-bool Slice::isValidPermutation(const std::vector<int> &permutation) const
+std::vector<Row> makeRows(std::vector<std::vector<Field>> &fields)
 {
-    assert(permutation.size() == mRow->size());
+    BorderIterator borderIterator{fields.size()};
 
-    auto permIt = permutation.cbegin();
-    for (auto rowIt = mRow->cbegin();
-         rowIt != mRow->cend() && permIt != permutation.end();
-         ++rowIt, ++permIt) {
-
-        if (rowIt->hasSkyscraper()) {
-            if (rowIt->skyscraper() != *permIt) {
-                return false;
-            }
-        }
-        else if (!rowIt->nopes().isEmpty()) {
-            if (rowIt->nopes().contains(*permIt)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-template <typename SkyIterator, typename RowIterator>
-bool Slice::hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                           RowIterator rowItBegin, RowIterator rowItEnd)
-{
-    auto skyIt = skyItBegin;
-    for (auto rowIt = rowItBegin; rowIt != rowItEnd && skyIt != skyItEnd;
-         ++rowIt, ++skyIt) {
-        if (*skyIt == 0 && rowIt->hasSkyscraper()) {
-            continue;
-        }
-        if (rowIt->skyscraper() != *skyIt) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <typename NopesIterator, typename RowIterator>
-bool Slice::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                     RowIterator rowItBegin, RowIterator rowItEnd)
-{
-    auto nopesIt = nopesItBegin;
-    for (auto rowIt = rowItBegin; rowIt != rowItEnd && nopesIt != nopesItEnd;
-         ++rowIt, ++nopesIt) {
-
-        if (nopesIt->empty()) {
-            continue;
-        }
-        if (rowIt->hasSkyscraper()) {
-            return false;
-        }
-        if (!rowIt->nopes().contains(*nopesIt)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <typename SkyIterator, typename RowIterator>
-void Slice::addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                           RowIterator rowItBegin, RowIterator rowItEnd)
-{
-    auto skyIt = skyItBegin;
-    for (auto rowIt = rowItBegin; rowIt != rowItEnd && skyIt != skyItEnd;
-         ++rowIt, ++skyIt) {
-        if (*skyIt == 0) {
-            continue;
-        }
-        mRow->insertSkyscraper(rowIt, *skyIt);
-    }
-}
-
-template <typename NopesIterator, typename RowIterator>
-void Slice::addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                     RowIterator rowItBegin, RowIterator rowItEnd)
-{
-    auto nopesIt = nopesItBegin;
-    for (auto rowIt = rowItBegin; rowIt != rowItEnd && nopesIt != nopesItEnd;
-         ++rowIt, ++nopesIt) {
-        if (nopesIt->empty()) {
-            continue;
-        }
-        mRow->insertNopes(rowIt, *nopesIt);
-    }
-}
-
-std::vector<Row> makeRows(Board &board)
-{
-    BorderIterator borderIterator{board.skyscrapers.size()};
-
-    std::size_t size = board.skyscrapers.size() * 2;
+    std::size_t size = fields.size() * 2;
     std::vector<Row> rows;
     rows.reserve(size);
-    for (std::size_t i = 0; i < size; ++i, ++borderIterator) {
-        auto fields = makeFields(board, borderIterator.point(),
-                                 borderIterator.borderPosition());
 
-        rows.emplace_back(Row{fields});
+    for (std::size_t i = 0; i < size; ++i, ++borderIterator) {
+        rows.emplace_back(Row{fields, borderIterator.point(),
+                              borderIterator.readDirection()});
     }
     return rows;
 }
@@ -1207,46 +1104,25 @@ std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
     auto cluePairs = makeCluePairs(clues);
 
     int boardSize = clues.size() / 4;
-    // Board board{boardSize};
+    Board board{boardSize};
 
     auto permutations = generatePermutations(boardSize);
     auto possiblePermutations =
         getPossiblePermutations(permutations, cluePairs);
 
-    auto rows = makeRows(board);
+    auto fields = makeFields(board);
+    auto rows = makeRows(fields);
     connectRowsWithCrossingRows(rows);
     std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
 
-    debug_print(board);
-
-    int count = 0;
     for (;;) {
         bool allFullFirst = true;
         for (std::size_t i = 0; i < slices.size(); ++i) {
-            ++count;
-            if (count > 1000) {
-                debug_print(board);
-                break;
-            }
-
             if (slices[i].isSolved()) {
                 continue;
             }
-
-            if (i == 1) {
-                i = 1;
-            }
-
-            std::cout << "i:\t" << i << '\n';
-            debug_print(board);
-
             slices[i].solveFromPossiblePermutations();
-
-            debug_print(board);
-
             slices[i].guessSkyscraperOutOfNeighbourNopes();
-
-            debug_print(board);
 
             if (!slices[i].isSolved()) {
                 allFullFirst = false;
