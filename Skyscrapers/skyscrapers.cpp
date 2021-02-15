@@ -377,6 +377,8 @@ public:
     Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
         const ReadDirection &readDirection);
 
+    void insertSkyscraper(int pos, int skyscraper);
+
     std::size_t size() const;
 
     void addCrossingRows(Row *crossingRow);
@@ -455,6 +457,14 @@ Row::Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
          const ReadDirection &readDirection)
     : mRowFields{getRowFields(readDirection, fields, startPoint)}
 {
+}
+
+void Row::insertSkyscraper(int pos, int skyscraper)
+{
+    assert(pos >= 0 && pos < static_cast<int>(mRowFields.size()));
+    assert(skyscraper > 0 && skyscraper <= static_cast<int>(mRowFields.size()));
+    auto it = mRowFields.begin() + pos;
+    insertSkyscraper(it, skyscraper);
 }
 
 std::size_t Row::size() const
@@ -1015,6 +1025,23 @@ void connectRowsWithCrossingRows(std::vector<Row> &rows)
     }
 }
 
+void insertExistingSkyscrapersFromStartingGrid(
+    std::vector<Row> &rows, const std::vector<std::vector<int>> startingGrid)
+{
+    assert(startingGrid.size() == rows.size() / 2);
+    assert(startingGrid[0].size() == rows.size() / 2);
+
+    std::size_t verticalRowsSize = rows.size() / 2;
+    for (std::size_t x = 0; x < verticalRowsSize; ++x) {
+        for (std::size_t y = 0; y < verticalRowsSize; ++y) {
+            if (startingGrid[y][x] == 0) {
+                continue;
+            }
+            rows[x].insertSkyscraper(static_cast<int>(y), startingGrid[y][x]);
+        }
+    }
+}
+
 std::vector<Slice>
 makeSlices(std::vector<std::vector<std::vector<int>>> &possiblePermutations,
            std::vector<Row> &rows)
@@ -1097,7 +1124,9 @@ getPossiblePermutations(const std::vector<std::vector<int>> &permutations,
     return result;
 }
 
-std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
+std::vector<std::vector<int>>
+SolvePuzzle(const std::vector<int> &clues,
+            std::vector<std::vector<int>> startingGrid, int)
 {
     assert(clues.size() % 4 == 0);
 
@@ -1113,9 +1142,24 @@ std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
     auto fields = makeFields(board);
     auto rows = makeRows(fields);
     connectRowsWithCrossingRows(rows);
+
+    if (!startingGrid.empty()) {
+        insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
+    }
+
     std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
 
+    debug_print(board);
+
+    int count = 0;
     for (;;) {
+        ++count;
+
+        if (count > 1000) {
+            debug_print(board);
+            break;
+        }
+
         bool allFullFirst = true;
         for (std::size_t i = 0; i < slices.size(); ++i) {
             if (slices[i].isSolved()) {
@@ -1136,8 +1180,7 @@ std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
     return board.skyscrapers;
 }
 
-std::vector<std::vector<int>>
-SolvePuzzle(const std::vector<int> &clues,
-            std::vector<std::vector<int>> starting_grid, int N)
+std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
 {
+    return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
 }
