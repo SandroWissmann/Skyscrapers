@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 
 template <typename It> int missingNumberInSequence(It begin, It end)
@@ -229,8 +230,10 @@ void debug_print(Board &board, const std::string &title = "")
     std::cout << title << '\n';
     for (std::size_t y = 0; y < board.skyscrapers.size(); ++y) {
         for (std::size_t x = 0; x < board.skyscrapers[y].size(); ++x) {
+
             if (board.skyscrapers[y][x] != 0) {
-                std::cout << "V" << board.skyscrapers[y][x] << '\t';
+                std::cout << std::setw(board.skyscrapers.size() * 2);
+                std::cout << "V" + std::to_string(board.skyscrapers[y][x]);
             }
             else if (board.skyscrapers[y][x] == 0 &&
                      !board.nopes[y][x].isEmpty()) {
@@ -238,19 +241,18 @@ void debug_print(Board &board, const std::string &title = "")
                 std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
                 std::sort(nopes.begin(), nopes.end());
 
+                std::string nopesStr;
                 for (std::size_t i = 0; i < nopes.size(); ++i) {
-                    std::cout << nopes[i];
-
-                    if (i == nopes.size() - 1) {
-                        std::cout << '\t';
-                    }
-                    else {
-                        std::cout << ',';
+                    nopesStr.append(std::to_string(nopes[i]));
+                    if (i != nopes.size() - 1) {
+                        nopesStr.push_back(',');
                     }
                 }
+                std::cout << std::setw(board.skyscrapers.size() * 2);
+                std::cout << nopesStr;
             }
             else {
-                std::cout << '\t';
+                std::cout << ' ';
             }
         }
         std::cout << '\n';
@@ -924,12 +926,28 @@ void Slice::solveFromPossiblePermutations()
     if (mPossiblePermutations.empty()) {
         return;
     }
+
+    bool first = true;
+    auto beforePerm = mPossiblePermutations.size();
+
     while (reducePossiblePermutations()) {
+
+        if (first) {
+            first = false;
+            std::cout << this << "\tbefore:\t" << beforePerm << '\n';
+        }
+
+        std::cout << this << "\tafter:\t" << mPossiblePermutations.size()
+                  << '\n';
+
         auto possibleBuildings = getPossibleBuildings();
         auto fieldElements = getFieldElements(possibleBuildings);
 
         mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
         mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+    }
+    if (!first) {
+        std::cout << '\n';
     }
 }
 
@@ -1149,7 +1167,7 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
 
-    debug_print(board);
+    // debug_print(board);
 
     int count = 0;
     for (;;) {
