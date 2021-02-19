@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -397,8 +397,6 @@ public:
 
     void guessSkyscraperOutOfNeighbourNopes();
 
-    bool isValidPermutation(const std::vector<int> &permutation) const;
-
     enum class Direction { front, back };
 
     bool hasSkyscrapers(const std::vector<int> &skyscrapers,
@@ -410,6 +408,8 @@ public:
                         Direction direction);
     void addNopes(const std::vector<std::vector<int>> &nopes,
                   Direction direction);
+
+    std::vector<Field *> getFields() const;
 
 private:
     template <typename SkyIterator, typename FieldIterator>
@@ -558,29 +558,6 @@ void Row::guessSkyscraperOutOfNeighbourNopes()
     }
 }
 
-bool Row::isValidPermutation(const std::vector<int> &permutation) const
-{
-    assert(permutation.size() == size());
-
-    auto permIt = permutation.cbegin();
-    for (auto fieldIt = mRowFields.cbegin();
-         fieldIt != mRowFields.cend() && permIt != permutation.end();
-         ++fieldIt, ++permIt) {
-
-        if ((*fieldIt)->hasSkyscraper()) {
-            if ((*fieldIt)->skyscraper() != *permIt) {
-                return false;
-            }
-        }
-        else if (!(*fieldIt)->nopes().isEmpty()) {
-            if ((*fieldIt)->nopes().contains(*permIt)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 bool Row::hasSkyscrapers(const std::vector<int> &skyscrapers,
                          Row::Direction direction) const
 {
@@ -626,6 +603,11 @@ void Row::addNopes(const std::vector<std::vector<int>> &nopes,
         addNopes(nopes.begin(), nopes.end(), mRowFields.rbegin(),
                  mRowFields.rend());
     }
+}
+
+std::vector<Field *> Row::getFields() const
+{
+    return mRowFields;
 }
 
 template <typename SkyIterator, typename FieldIterator>
@@ -876,6 +858,28 @@ std::vector<CluePair> makeCluePairs(const std::vector<int> &clues)
     return cluePairs;
 }
 
+bool isValidPermutation(const std::vector<int> &permutation,
+                        const std::vector<Field *> fields)
+{
+    auto permIt = permutation.cbegin();
+    for (auto fieldIt = fields.cbegin();
+         fieldIt != fields.cend() && permIt != permutation.end();
+         ++fieldIt, ++permIt) {
+
+        if ((*fieldIt)->hasSkyscraper()) {
+            if ((*fieldIt)->skyscraper() != *permIt) {
+                return false;
+            }
+        }
+        else if (!(*fieldIt)->nopes().isEmpty()) {
+            if ((*fieldIt)->nopes().contains(*permIt)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 class Slice {
 public:
     Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row);
@@ -894,12 +898,14 @@ private:
     FieldElements
     getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
 
-    std::vector<std::vector<int>> mPossiblePermutations;
+    std::set<std::vector<int>> mPossiblePermutations;
     Row *mRow;
 };
 
 Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
-    : mPossiblePermutations{possiblePermutations}, mRow{&row}
+    : mPossiblePermutations{possiblePermutations.begin(),
+                            possiblePermutations.end()},
+      mRow{&row}
 {
     if (mPossiblePermutations.empty()) {
         return;
@@ -927,27 +933,12 @@ void Slice::solveFromPossiblePermutations()
         return;
     }
 
-    bool first = true;
-    auto beforePerm = mPossiblePermutations.size();
-
     while (reducePossiblePermutations()) {
-
-        if (first) {
-            first = false;
-            std::cout << this << "\tbefore:\t" << beforePerm << '\n';
-        }
-
-        std::cout << this << "\tafter:\t" << mPossiblePermutations.size()
-                  << '\n';
-
         auto possibleBuildings = getPossibleBuildings();
         auto fieldElements = getFieldElements(possibleBuildings);
 
         mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
         mRow->addNopes(fieldElements.nopes, Row::Direction::front);
-    }
-    if (!first) {
-        std::cout << '\n';
     }
 }
 
@@ -956,9 +947,11 @@ bool Slice::reducePossiblePermutations()
     auto startSize = mPossiblePermutations.size();
     auto it = mPossiblePermutations.begin();
 
+    auto fields = mRow->getFields();
+
     while (it != mPossiblePermutations.end()) {
 
-        if (!mRow->isValidPermutation(*it)) {
+        if (!isValidPermutation(*it, fields)) {
             it = mPossiblePermutations.erase(it);
         }
         else {
@@ -1146,6 +1139,29 @@ std::vector<std::vector<int>>
 SolvePuzzle(const std::vector<int> &clues,
             std::vector<std::vector<int>> startingGrid, int)
 {
+    //    if (startingGrid.size() > 7) {
+    //        return {};
+    //    }
+
+    //    std::cout << "clues:\n";
+    //    for (const auto &clue : clues) {
+    //        std::cout << clue << ',';
+    //    }
+
+    //    std::cout << '\n';
+
+    //    std::cout << "grid:\n";
+    //    for (const auto &row : startingGrid) {
+    //        for (const auto &number : row) {
+    //            std::cout << number << ',';
+    //        }
+    //        std::cout << '\n';
+    //    }
+
+    //    std::cout << '\n';
+    //    std::cout << '\n';
+    //    std::cout << '\n';
+
     assert(clues.size() % 4 == 0);
 
     auto cluePairs = makeCluePairs(clues);
@@ -1173,7 +1189,7 @@ SolvePuzzle(const std::vector<int> &clues,
     for (;;) {
         ++count;
 
-        if (count > 1000) {
+        if (count > 2000) {
             debug_print(board);
             break;
         }
