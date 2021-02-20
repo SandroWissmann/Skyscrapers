@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -1075,20 +1075,6 @@ int factorial(int n)
     return n * factorial(n - 1);
 }
 
-std::vector<std::vector<int>> generatePermutations(int size)
-{
-    std::vector<int> sequence(size);
-    std::iota(sequence.begin(), sequence.end(), 1);
-
-    std::vector<std::vector<int>> permutations;
-    permutations.reserve(factorial(sequence.size()));
-
-    do {
-        permutations.emplace_back(sequence);
-    } while (std::next_permutation(sequence.begin(), sequence.end()));
-    return permutations;
-}
-
 template <typename BuildingIt>
 int buildingsVisible(BuildingIt begin, BuildingIt end)
 {
@@ -1104,32 +1090,95 @@ int buildingsVisible(BuildingIt begin, BuildingIt end)
     return visibleBuildingsCount;
 }
 
+class Permutations {
+public:
+    Permutations(std::size_t size);
+    std::vector<int> operator[](std::size_t elem) const;
+    std::size_t count() const;
+
+    int frontVisible(std::size_t elem) const;
+    int backVisible(std::size_t elem) const;
+
+private:
+    std::size_t mSize;
+    std::size_t mPermutationCount;
+    std::vector<int> mPermutations;
+    std::vector<int> mVisibleBuildingsFront;
+    std::vector<int> mVisibleBuildingsBack;
+};
+
+Permutations::Permutations(std::size_t size) : mSize(size)
+{
+    std::vector<int> sequence(mSize);
+    std::iota(sequence.begin(), sequence.end(), 1);
+
+    mPermutationCount = factorial(sequence.size());
+    mPermutations.reserve(mPermutationCount * mSize);
+    int *p = &mPermutations[0];
+
+    mVisibleBuildingsFront.reserve(mPermutationCount);
+    mVisibleBuildingsBack.reserve(mPermutationCount);
+    do {
+
+        mVisibleBuildingsFront.emplace_back(
+            buildingsVisible(sequence.cbegin(), sequence.cend()));
+        mVisibleBuildingsBack.emplace_back(
+            buildingsVisible(sequence.crbegin(), sequence.crend()));
+
+        std::copy(sequence.begin(), sequence.end(), p);
+        p += mSize;
+    } while (std::next_permutation(sequence.begin(), sequence.end()));
+};
+
+std::vector<int> Permutations::operator[](std::size_t elem) const
+{
+    auto begin = mPermutations.begin() + (mSize * elem);
+    auto end = begin + mSize;
+    return std::vector<int>(begin, end);
+}
+
+std::size_t Permutations::count() const
+{
+    return mPermutationCount;
+}
+
+int Permutations::frontVisible(std::size_t elem) const
+{
+    return mVisibleBuildingsFront[elem];
+}
+
+int Permutations::backVisible(std::size_t elem) const
+{
+    return mVisibleBuildingsBack[elem];
+}
+
 std::vector<std::vector<std::vector<int>>>
-getPossiblePermutations(const std::vector<std::vector<int>> &permutations,
+getPossiblePermutations(const Permutations &permutations,
                         const std::vector<CluePair> &cluePairs)
 {
     std::vector<std::vector<std::vector<int>>> result(cluePairs.size());
-    for (auto &elem : result) {
-        elem.reserve(permutations.size() / 3);
+    for (std::size_t i = 0; i < result.size(); ++i) {
+        if (cluePairs[i].front == 0 && cluePairs[i].back == 0) {
+            continue;
+        }
+        result[i].reserve(permutations.count() / 3);
     }
 
-    for (const auto &permutation : permutations) {
+    for (std::size_t i = 0; i < permutations.count(); ++i) {
+        auto front = permutations.frontVisible(i);
+        auto back = permutations.backVisible(i);
 
-        auto front = buildingsVisible(permutation.cbegin(), permutation.cend());
-        auto back =
-            buildingsVisible(permutation.crbegin(), permutation.crend());
-
-        for (std::size_t i = 0; i < cluePairs.size(); ++i) {
-            if (cluePairs[i].front == 0 && cluePairs[i].back == 0) {
+        for (std::size_t j = 0; j < cluePairs.size(); ++j) {
+            if (cluePairs[j].front == 0 && cluePairs[j].back == 0) {
                 continue;
             }
-            if (cluePairs[i].front != 0 && cluePairs[i].front != front) {
+            if (cluePairs[j].front != 0 && cluePairs[j].front != front) {
                 continue;
             }
-            if (cluePairs[i].back != 0 && cluePairs[i].back != back) {
+            if (cluePairs[j].back != 0 && cluePairs[j].back != back) {
                 continue;
             }
-            result[i].emplace_back(permutation);
+            result[j].emplace_back(permutations[i]);
         }
     }
     return result;
@@ -1169,9 +1218,20 @@ SolvePuzzle(const std::vector<int> &clues,
     int boardSize = clues.size() / 4;
     Board board{boardSize};
 
-    auto permutations = generatePermutations(boardSize);
+    Permutations permutations(boardSize);
+
+    //    auto t1 = std::chrono::high_resolution_clock::now();
+
     auto possiblePermutations =
         getPossiblePermutations(permutations, cluePairs);
+
+    //    auto t2 = std::chrono::high_resolution_clock::now();
+
+    //    std::cout << "perm time:"
+    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
+    //              - t1)
+    //                     .count()
+    //              << '\n';
 
     auto fields = makeFields(board);
     auto rows = makeRows(fields);
@@ -1183,17 +1243,7 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
 
-    // debug_print(board);
-
-    int count = 0;
     for (;;) {
-        ++count;
-
-        if (count > 2000) {
-            debug_print(board);
-            break;
-        }
-
         bool allFullFirst = true;
         for (std::size_t i = 0; i < slices.size(); ++i) {
             if (slices[i].isSolved()) {
