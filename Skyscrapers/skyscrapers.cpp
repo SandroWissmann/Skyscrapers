@@ -828,10 +828,55 @@ bool Row::hasSkyscraper(int skyscraper) const
     return false;
 }
 
-struct CluePair {
-    int front{};
-    int back{};
+class CluePair {
+public:
+    CluePair(int front, int back);
+
+    int front() const;
+    int back() const;
+
+    bool frontIsEmpty() const;
+    bool backIsEmpty() const;
+    bool isEmpty() const;
+
+private:
+    int mFront;
+    int mBack;
+    bool mFrontIsEmpty;
+    bool mBackIsEmpty;
+    bool mIsEmpty;
 };
+
+CluePair::CluePair(int front, int back)
+    : mFront{front}, mBack{back}, mFrontIsEmpty{mFront == 0},
+      mBackIsEmpty{mBack == 0}, mIsEmpty{mFrontIsEmpty && mBackIsEmpty}
+{
+}
+
+int CluePair::front() const
+{
+    return mFront;
+}
+
+int CluePair::back() const
+{
+    return mBack;
+}
+
+bool CluePair::frontIsEmpty() const
+{
+    return mFrontIsEmpty;
+}
+
+bool CluePair::backIsEmpty() const
+{
+    return mBackIsEmpty;
+}
+
+bool CluePair::isEmpty() const
+{
+    return mIsEmpty;
+}
 
 struct FieldElements {
     std::vector<int> skyscrapers{};
@@ -1179,12 +1224,12 @@ getPossiblePermutations(const Permutations &permutations,
 {
     assert(rows.size() == cluePairs.size());
 
-    std::vector<std::vector<std::vector<int>>> result(cluePairs.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-        if (cluePairs[i].front == 0 && cluePairs[i].back == 0) {
+    std::vector<std::vector<std::vector<int>>> results(cluePairs.size());
+    for (std::size_t i = 0; i < results.size(); ++i) {
+        if (cluePairs[i].isEmpty()) {
             continue;
         }
-        result[i].reserve(permutations.count() / 3);
+        results[i].reserve(permutations.count() / 2);
     }
 
     for (std::size_t i = 0; i < permutations.count(); ++i) {
@@ -1192,13 +1237,13 @@ getPossiblePermutations(const Permutations &permutations,
         auto back = permutations.backVisible(i);
 
         for (std::size_t j = 0; j < cluePairs.size(); ++j) {
-            if (cluePairs[j].front == 0 && cluePairs[j].back == 0) {
+            if (cluePairs[j].isEmpty()) {
                 continue;
             }
-            if (cluePairs[j].front != 0 && cluePairs[j].front != front) {
+            if (!cluePairs[j].frontIsEmpty() && cluePairs[j].front() != front) {
                 continue;
             }
-            if (cluePairs[j].back != 0 && cluePairs[j].back != back) {
+            if (!cluePairs[j].backIsEmpty() && cluePairs[j].back() != back) {
                 continue;
             }
             auto fields = rows[j].getFields();
@@ -1206,10 +1251,11 @@ getPossiblePermutations(const Permutations &permutations,
             if (!existingSkyscrapersInPermutation(fields, permutations[i])) {
                 continue;
             }
-            result[j].emplace_back(permutations[i]);
+            results[j].emplace_back(permutations[i]);
         }
     }
-    return result;
+
+    return results;
 }
 
 std::vector<std::vector<int>>
