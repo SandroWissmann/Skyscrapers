@@ -1152,10 +1152,33 @@ int Permutations::backVisible(std::size_t elem) const
     return mVisibleBuildingsBack[elem];
 }
 
+bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
+                                      const std::vector<int> &permutation)
+{
+    assert(fields.size() == permutation.size());
+
+    auto fieldIt = fields.cbegin();
+    auto permutationIt = permutation.cbegin();
+
+    for (; fieldIt != fields.cend() && permutationIt != permutation.cend();
+         ++fieldIt, ++permutationIt) {
+        if (!(*fieldIt)->hasSkyscraper()) {
+            continue;
+        }
+        if ((*fieldIt)->skyscraper() != *permutationIt) {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::vector<std::vector<std::vector<int>>>
 getPossiblePermutations(const Permutations &permutations,
+                        const std::vector<Row> &rows,
                         const std::vector<CluePair> &cluePairs)
 {
+    assert(rows.size() == cluePairs.size());
+
     std::vector<std::vector<std::vector<int>>> result(cluePairs.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
         if (cluePairs[i].front == 0 && cluePairs[i].back == 0) {
@@ -1178,6 +1201,11 @@ getPossiblePermutations(const Permutations &permutations,
             if (cluePairs[j].back != 0 && cluePairs[j].back != back) {
                 continue;
             }
+            auto fields = rows[j].getFields();
+
+            if (!existingSkyscrapersInPermutation(fields, permutations[i])) {
+                continue;
+            }
             result[j].emplace_back(permutations[i]);
         }
     }
@@ -1188,50 +1216,12 @@ std::vector<std::vector<int>>
 SolvePuzzle(const std::vector<int> &clues,
             std::vector<std::vector<int>> startingGrid, int)
 {
-    //    if (startingGrid.size() > 7) {
-    //        return {};
-    //    }
-
-    //    std::cout << "clues:\n";
-    //    for (const auto &clue : clues) {
-    //        std::cout << clue << ',';
-    //    }
-
-    //    std::cout << '\n';
-
-    //    std::cout << "grid:\n";
-    //    for (const auto &row : startingGrid) {
-    //        for (const auto &number : row) {
-    //            std::cout << number << ',';
-    //        }
-    //        std::cout << '\n';
-    //    }
-
-    //    std::cout << '\n';
-    //    std::cout << '\n';
-    //    std::cout << '\n';
-
     assert(clues.size() % 4 == 0);
 
     auto cluePairs = makeCluePairs(clues);
 
     int boardSize = clues.size() / 4;
     Board board{boardSize};
-
-    Permutations permutations(boardSize);
-
-    //    auto t1 = std::chrono::high_resolution_clock::now();
-
-    auto possiblePermutations =
-        getPossiblePermutations(permutations, cluePairs);
-
-    //    auto t2 = std::chrono::high_resolution_clock::now();
-
-    //    std::cout << "perm time:"
-    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
-    //              - t1)
-    //                     .count()
-    //              << '\n';
 
     auto fields = makeFields(board);
     auto rows = makeRows(fields);
@@ -1240,6 +1230,11 @@ SolvePuzzle(const std::vector<int> &clues,
     if (!startingGrid.empty()) {
         insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
     }
+
+    Permutations permutations(boardSize);
+
+    auto possiblePermutations =
+        getPossiblePermutations(permutations, rows, cluePairs);
 
     std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
 
@@ -1268,3 +1263,13 @@ std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
 {
     return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
 }
+
+//    auto t1 = std::chrono::high_resolution_clock::now();
+
+//    auto t2 = std::chrono::high_resolution_clock::now();
+
+//    std::cout << "perm time:"
+//              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
+//              - t1)
+//                     .count()
+//              << '\n';
