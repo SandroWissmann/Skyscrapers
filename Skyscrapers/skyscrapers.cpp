@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -925,6 +925,38 @@ bool isValidPermutation(const std::vector<int> &permutation,
     return true;
 }
 
+bool fieldsIdentical(const std::vector<Field> &lastFields,
+                     const std::vector<Field *> &currFields)
+{
+    if (lastFields.size() != currFields.size()) {
+        return false;
+    }
+
+    auto lastIt = lastFields.begin();
+    auto currPtrIt = currFields.begin();
+
+    for (; lastIt != lastFields.end(); ++lastIt, ++currPtrIt) {
+        if (lastIt->skyscraper() != (*currPtrIt)->skyscraper()) {
+            return false;
+        }
+        if (lastIt->nopes().values() != (*currPtrIt)->nopes().values()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::vector<Field> copyField(const std::vector<Field *> &currFields)
+{
+    std::vector<Field> result;
+    result.reserve(currFields.size());
+
+    for (const auto &currField : currFields) {
+        result.emplace_back(Field{*currField});
+    }
+    return result;
+}
+
 class Slice {
 public:
     Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row);
@@ -955,6 +987,7 @@ Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
     if (mPossiblePermutations.empty()) {
         return;
     }
+
     auto possibleBuildings = getPossibleBuildings();
     auto fieldElements = getFieldElements(possibleBuildings);
 
@@ -979,11 +1012,18 @@ void Slice::solveFromPossiblePermutations()
     }
 
     while (reducePossiblePermutations()) {
+
+        auto lastFields = copyField(mRow->getFields());
+
         auto possibleBuildings = getPossibleBuildings();
         auto fieldElements = getFieldElements(possibleBuildings);
 
         mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
         mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+
+        if (fieldsIdentical(lastFields, mRow->getFields())) {
+            break;
+        }
     }
 }
 
@@ -1003,6 +1043,7 @@ bool Slice::reducePossiblePermutations()
             ++it;
         }
     }
+
     return startSize > mPossiblePermutations.size();
 }
 
@@ -1270,22 +1311,48 @@ SolvePuzzle(const std::vector<int> &clues,
     Board board{boardSize};
 
     auto fields = makeFields(board);
+
     auto rows = makeRows(fields);
+
     connectRowsWithCrossingRows(rows);
 
     if (!startingGrid.empty()) {
         insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
     }
 
+    auto t1 = std::chrono::high_resolution_clock::now();
+
     Permutations permutations(boardSize);
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "generate permutations:"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                     .count()
+              << '\n';
+
+    auto t3 = std::chrono::high_resolution_clock::now();
 
     auto possiblePermutations =
         getPossiblePermutations(permutations, rows, cluePairs);
 
+    auto t4 = std::chrono::high_resolution_clock::now();
+    std::cout << "possible permutations:"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3)
+                     .count()
+              << '\n';
+
+    auto t5 = std::chrono::high_resolution_clock::now();
+
     std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
 
+    auto t6 = std::chrono::high_resolution_clock::now();
+    std::cout << "make slices:"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5)
+                     .count()
+              << '\n';
+
     for (;;) {
-        bool allFullFirst = true;
+        bool allFull = true;
         for (std::size_t i = 0; i < slices.size(); ++i) {
             if (slices[i].isSolved()) {
                 continue;
@@ -1294,11 +1361,11 @@ SolvePuzzle(const std::vector<int> &clues,
             slices[i].guessSkyscraperOutOfNeighbourNopes();
 
             if (!slices[i].isSolved()) {
-                allFullFirst = false;
+                allFull = false;
             }
         }
 
-        if (allFullFirst) {
+        if (allFull) {
             break;
         }
     }
