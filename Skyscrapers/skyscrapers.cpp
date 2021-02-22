@@ -13,6 +13,89 @@
 #include <iomanip>
 #include <iostream>
 
+template <typename T> class Span {
+public:
+    using element_type = T;
+    using value_type = std::remove_cv_t<T>;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T *;
+    using const_pointer = const T *;
+    using reference = T &;
+    using const_reference = const T &;
+    using const_iterator = const_pointer;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+    Span(const_pointer ptr, size_type size);
+
+    constexpr const_pointer data() const noexcept;
+
+    constexpr size_type size() const noexcept;
+
+    constexpr const_reference operator[](size_type idx) const;
+
+    constexpr const_iterator cbegin() const noexcept;
+    constexpr const_iterator cend() const noexcept;
+
+    constexpr const_reverse_iterator crbegin() const noexcept;
+    constexpr const_reverse_iterator crend() const noexcept;
+
+private:
+    const_pointer mPtr;
+    size_type mSize;
+};
+
+template <typename T>
+Span<T>::Span(const_pointer ptr, size_type size) : mPtr{ptr}, mSize{size}
+{
+}
+
+template <typename T>
+constexpr typename Span<T>::const_pointer Span<T>::data() const noexcept
+{
+    return mPtr;
+}
+
+template <typename T>
+constexpr typename Span<T>::size_type Span<T>::size() const noexcept
+{
+    return mSize;
+}
+
+template <typename T>
+constexpr typename Span<T>::const_reference
+Span<T>::operator[](Span::size_type idx) const
+{
+    assert(idx < mSize);
+    return *(data() + idx);
+}
+
+template <typename T>
+constexpr typename Span<T>::const_iterator Span<T>::cbegin() const noexcept
+{
+    return data();
+}
+
+template <typename T>
+constexpr typename Span<T>::const_iterator Span<T>::cend() const noexcept
+{
+    return data() + size();
+}
+
+template <typename T>
+constexpr typename Span<T>::const_reverse_iterator
+Span<T>::crbegin() const noexcept
+{
+    return reverse_iterator(cend());
+}
+
+template <typename T>
+constexpr typename Span<T>::const_reverse_iterator
+Span<T>::crend() const noexcept
+{
+    return reverse_iterator(cbegin());
+}
+
 template <typename It> int missingNumberInSequence(It begin, It end)
 {
     int n = std::distance(begin, end) + 1;
@@ -904,12 +987,12 @@ std::vector<CluePair> makeCluePairs(const std::vector<int> &clues)
     return cluePairs;
 }
 
-bool isValidPermutation(const std::vector<int> &permutation,
+bool isValidPermutation(const Span<int> &permutation,
                         const std::vector<Field *> fields)
 {
     auto permIt = permutation.cbegin();
     for (auto fieldIt = fields.cbegin();
-         fieldIt != fields.cend() && permIt != permutation.end();
+         fieldIt != fields.cend() && permIt != permutation.cend();
          ++fieldIt, ++permIt) {
 
         if ((*fieldIt)->hasSkyscraper()) {
@@ -960,7 +1043,7 @@ std::vector<Field> copyField(const std::vector<Field *> &currFields)
 
 class Slice {
 public:
-    Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row);
+    Slice(std::vector<Span<int>> &&possiblePermutations, Row &row);
 
     void guessSkyscraperOutOfNeighbourNopes();
 
@@ -976,14 +1059,12 @@ private:
     FieldElements
     getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
 
-    std::set<std::vector<int>> mPossiblePermutations;
+    std::vector<Span<int>> mPossiblePermutations;
     Row *mRow;
 };
 
-Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
-    : mPossiblePermutations{possiblePermutations.begin(),
-                            possiblePermutations.end()},
-      mRow{&row}
+Slice::Slice(std::vector<Span<int>> &&possiblePermutations, Row &row)
+    : mPossiblePermutations{possiblePermutations}, mRow{&row}
 {
     if (mPossiblePermutations.empty()) {
         return;
@@ -1140,20 +1221,6 @@ void insertExistingSkyscrapersFromStartingGrid(
     }
 }
 
-std::vector<Slice>
-makeSlices(std::vector<std::vector<std::vector<int>>> &possiblePermutations,
-           std::vector<Row> &rows)
-{
-    std::vector<Slice> slices;
-    slices.reserve(possiblePermutations.size());
-
-    for (std::size_t i = 0; i < possiblePermutations.size(); ++i) {
-        slices.emplace_back(Slice{std::move(possiblePermutations[i]), rows[i]});
-    }
-
-    return slices;
-}
-
 int factorial(int n)
 {
     if (n == 0) {
@@ -1177,82 +1244,10 @@ int buildingsVisible(BuildingIt begin, BuildingIt end)
     return visibleBuildingsCount;
 }
 
-// class Span {
-// public:
-//    using element_type = int;
-//    using value_type = std::remove_cv_t<int>;
-//    using size_type = std::size_t;
-//    using difference_type = std::ptrdiff_t;
-//    using pointer = int *;
-//    using const_pointer = const int *;
-//    using reference = int &;
-//    using const_reference = const int &;
-//    using iterator = pointer;
-//    using reverse_iterator = std::reverse_iterator<iterator>;
-
-//    Span(int *ptr, size_type size);
-
-//    constexpr pointer data() const noexcept;
-
-//    constexpr size_type size() const noexcept;
-
-//    constexpr reference operator[](size_type idx) const;
-
-//    constexpr iterator begin() const noexcept;
-//    constexpr iterator end() const noexcept;
-
-//    constexpr reverse_iterator rbegin() const noexcept;
-//    constexpr reverse_iterator rend() const noexcept;
-
-// private:
-//    pointer mPtr;
-//    size_type mSize;
-//};
-
-// Span::Span(int *ptr, size_type size) : mPtr{ptr}, mSize{size}
-//{
-//}
-
-// constexpr Span::pointer Span::data() const noexcept
-//{
-//    return mPtr;
-//}
-
-// constexpr Span::size_type Span::size() const noexcept
-//{
-//    return mSize;
-//}
-
-// constexpr Span::reference Span::operator[](Span::size_type idx) const
-//{
-//    assert(idx < mSize);
-//    return *(data() + idx);
-//}
-
-// constexpr Span::iterator Span::begin() const noexcept
-//{
-//    return data();
-//}
-
-// constexpr Span::iterator Span::end() const noexcept
-//{
-//    return data() + size();
-//}
-
-// constexpr Span::reverse_iterator Span::rbegin() const noexcept
-//{
-//    return reverse_iterator(end());
-//}
-
-// constexpr Span::reverse_iterator Span::rend() const noexcept
-//{
-//    return reverse_iterator(begin());
-//}
-
 class Permutations {
 public:
     Permutations(std::size_t size);
-    std::vector<int> operator[](std::size_t elem) const;
+    Span<int> operator[](std::size_t elem) const;
     std::size_t count() const;
 
     int frontVisible(std::size_t elem) const;
@@ -1289,11 +1284,10 @@ Permutations::Permutations(std::size_t size) : mSize(size)
     } while (std::next_permutation(sequence.begin(), sequence.end()));
 };
 
-std::vector<int> Permutations::operator[](std::size_t elem) const
+Span<int> Permutations::operator[](std::size_t elem) const
 {
-    auto begin = mPermutations.begin() + (mSize * elem);
-    auto end = begin + mSize;
-    return std::vector<int>(begin, end);
+    auto ptr = &mPermutations[0 + mSize * elem];
+    return Span<int>(ptr, mSize);
 }
 
 std::size_t Permutations::count() const
@@ -1312,7 +1306,7 @@ int Permutations::backVisible(std::size_t elem) const
 }
 
 bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
-                                      const std::vector<int> &permutation)
+                                      const Span<int> &permutation)
 {
     assert(fields.size() == permutation.size());
 
@@ -1331,14 +1325,14 @@ bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
     return true;
 }
 
-std::vector<std::vector<std::vector<int>>>
+std::vector<std::vector<Span<int>>>
 getPossiblePermutations(const Permutations &permutations,
                         const std::vector<Row> &rows,
                         const std::vector<CluePair> &cluePairs)
 {
     assert(rows.size() == cluePairs.size());
 
-    std::vector<std::vector<std::vector<int>>> results(cluePairs.size());
+    std::vector<std::vector<Span<int>>> results(cluePairs.size());
     for (std::size_t i = 0; i < results.size(); ++i) {
         if (cluePairs[i].isEmpty()) {
             continue;
@@ -1362,14 +1356,29 @@ getPossiblePermutations(const Permutations &permutations,
             }
             auto fields = rows[j].getFields();
 
-            if (!existingSkyscrapersInPermutation(fields, permutations[i])) {
+            auto permutation = permutations[i];
+            if (!existingSkyscrapersInPermutation(fields, permutation)) {
                 continue;
             }
-            results[j].emplace_back(permutations[i]);
+            results[j].emplace_back(permutation);
         }
     }
 
     return results;
+}
+
+std::vector<Slice>
+makeSlices(std::vector<std::vector<Span<int>>> &possiblePermutations,
+           std::vector<Row> &rows)
+{
+    std::vector<Slice> slices;
+    slices.reserve(possiblePermutations.size());
+
+    for (std::size_t i = 0; i < possiblePermutations.size(); ++i) {
+        slices.emplace_back(Slice{std::move(possiblePermutations[i]), rows[i]});
+    }
+
+    return slices;
 }
 
 std::vector<std::vector<int>>
