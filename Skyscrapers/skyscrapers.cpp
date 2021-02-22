@@ -6,6 +6,7 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <type_traits>
 #include <unordered_set>
 
 #include <chrono>
@@ -1175,6 +1176,78 @@ int buildingsVisible(BuildingIt begin, BuildingIt end)
     }
     return visibleBuildingsCount;
 }
+
+// class Span {
+// public:
+//    using element_type = int;
+//    using value_type = std::remove_cv_t<int>;
+//    using size_type = std::size_t;
+//    using difference_type = std::ptrdiff_t;
+//    using pointer = int *;
+//    using const_pointer = const int *;
+//    using reference = int &;
+//    using const_reference = const int &;
+//    using iterator = pointer;
+//    using reverse_iterator = std::reverse_iterator<iterator>;
+
+//    Span(int *ptr, size_type size);
+
+//    constexpr pointer data() const noexcept;
+
+//    constexpr size_type size() const noexcept;
+
+//    constexpr reference operator[](size_type idx) const;
+
+//    constexpr iterator begin() const noexcept;
+//    constexpr iterator end() const noexcept;
+
+//    constexpr reverse_iterator rbegin() const noexcept;
+//    constexpr reverse_iterator rend() const noexcept;
+
+// private:
+//    pointer mPtr;
+//    size_type mSize;
+//};
+
+// Span::Span(int *ptr, size_type size) : mPtr{ptr}, mSize{size}
+//{
+//}
+
+// constexpr Span::pointer Span::data() const noexcept
+//{
+//    return mPtr;
+//}
+
+// constexpr Span::size_type Span::size() const noexcept
+//{
+//    return mSize;
+//}
+
+// constexpr Span::reference Span::operator[](Span::size_type idx) const
+//{
+//    assert(idx < mSize);
+//    return *(data() + idx);
+//}
+
+// constexpr Span::iterator Span::begin() const noexcept
+//{
+//    return data();
+//}
+
+// constexpr Span::iterator Span::end() const noexcept
+//{
+//    return data() + size();
+//}
+
+// constexpr Span::reverse_iterator Span::rbegin() const noexcept
+//{
+//    return reverse_iterator(end());
+//}
+
+// constexpr Span::reverse_iterator Span::rend() const noexcept
+//{
+//    return reverse_iterator(begin());
+//}
 
 class Permutations {
 public:
