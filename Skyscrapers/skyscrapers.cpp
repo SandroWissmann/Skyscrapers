@@ -923,6 +923,12 @@ public:
     bool backIsEmpty() const;
     bool isEmpty() const;
 
+    bool operator<(const CluePair &other) const
+    {
+        return front() < other.front() ||
+               (front() == other.front() && back() < other.back());
+    }
+
 private:
     int mFront;
     int mBack;
@@ -987,7 +993,7 @@ std::vector<CluePair> makeCluePairs(const std::vector<int> &clues)
     return cluePairs;
 }
 
-bool isValidPermutation(const Span<int> &permutation,
+bool isValidPermutation(const std::vector<int> &permutation,
                         const std::vector<Field *> fields)
 {
     auto permIt = permutation.cbegin();
@@ -1043,7 +1049,7 @@ std::vector<Field> copyField(const std::vector<Field *> &currFields)
 
 class Slice {
 public:
-    Slice(std::vector<Span<int>> &&possiblePermutations, Row &row);
+    Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row);
 
     void guessSkyscraperOutOfNeighbourNopes();
 
@@ -1059,11 +1065,11 @@ private:
     FieldElements
     getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
 
-    std::vector<Span<int>> mPossiblePermutations;
+    std::vector<std::vector<int>> mPossiblePermutations;
     Row *mRow;
 };
 
-Slice::Slice(std::vector<Span<int>> &&possiblePermutations, Row &row)
+Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
     : mPossiblePermutations{possiblePermutations}, mRow{&row}
 {
     if (mPossiblePermutations.empty()) {
@@ -1244,69 +1250,8 @@ int buildingsVisible(BuildingIt begin, BuildingIt end)
     return visibleBuildingsCount;
 }
 
-class Permutations {
-public:
-    Permutations(std::size_t size);
-    Span<int> operator[](std::size_t elem) const;
-    std::size_t count() const;
-
-    int frontVisible(std::size_t elem) const;
-    int backVisible(std::size_t elem) const;
-
-private:
-    std::size_t mSize;
-    std::size_t mPermutationCount;
-    std::vector<int> mPermutations;
-    std::vector<int> mVisibleBuildingsFront;
-    std::vector<int> mVisibleBuildingsBack;
-};
-
-Permutations::Permutations(std::size_t size) : mSize(size)
-{
-    std::vector<int> sequence(mSize);
-    std::iota(sequence.begin(), sequence.end(), 1);
-
-    mPermutationCount = factorial(sequence.size());
-    mPermutations.reserve(mPermutationCount * mSize);
-    int *p = &mPermutations[0];
-
-    mVisibleBuildingsFront.reserve(mPermutationCount);
-    mVisibleBuildingsBack.reserve(mPermutationCount);
-    do {
-
-        mVisibleBuildingsFront.emplace_back(
-            buildingsVisible(sequence.cbegin(), sequence.cend()));
-        mVisibleBuildingsBack.emplace_back(
-            buildingsVisible(sequence.crbegin(), sequence.crend()));
-
-        std::copy(sequence.begin(), sequence.end(), p);
-        p += mSize;
-    } while (std::next_permutation(sequence.begin(), sequence.end()));
-};
-
-Span<int> Permutations::operator[](std::size_t elem) const
-{
-    auto ptr = &mPermutations[0 + mSize * elem];
-    return Span<int>(ptr, mSize);
-}
-
-std::size_t Permutations::count() const
-{
-    return mPermutationCount;
-}
-
-int Permutations::frontVisible(std::size_t elem) const
-{
-    return mVisibleBuildingsFront[elem];
-}
-
-int Permutations::backVisible(std::size_t elem) const
-{
-    return mVisibleBuildingsBack[elem];
-}
-
 bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
-                                      const Span<int> &permutation)
+                                      const std::vector<int> &permutation)
 {
     assert(fields.size() == permutation.size());
 
@@ -1325,57 +1270,80 @@ bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
     return true;
 }
 
-std::vector<std::vector<Span<int>>>
-getPossiblePermutations(const Permutations &permutations,
-                        const std::vector<Row> &rows,
-                        const std::vector<CluePair> &cluePairs)
+class Permutations {
+public:
+    Permutations(std::size_t size, const std::vector<CluePair> &cluePairs,
+                 const std::vector<Row> &rows);
+
+    std::vector<std::vector<int>> permutationsOfCluePair(int idx);
+
+private:
+    std::size_t mSize;
+    std::size_t mPermutationCount;
+    std::vector<std::vector<std::vector<int>>> mCluePairsWithPermutations;
+    // std::vector<int> mPermutations;
+};
+
+Permutations::Permutations(std::size_t size,
+                           const std::vector<CluePair> &cluePairs,
+                           const std::vector<Row> &rows)
+    : mSize{size}, mCluePairsWithPermutations(cluePairs.size())
 {
-    assert(rows.size() == cluePairs.size());
+    assert(cluePairs.size() == rows.size());
+    std::vector<int> sequence(mSize);
+    std::iota(sequence.begin(), sequence.end(), 1);
+    mPermutationCount = factorial(sequence.size());
 
-    std::vector<std::vector<Span<int>>> results(cluePairs.size());
-    for (std::size_t i = 0; i < results.size(); ++i) {
-        if (cluePairs[i].isEmpty()) {
-            continue;
-        }
-        results[i].reserve(permutations.count() / 2);
+    // mPermutations.reserve(mPermutationCount * mSize);
+    // int *p = &mPermutations[0];
+
+    for (auto &cluePairWithPermutations : mCluePairsWithPermutations) {
+        cluePairWithPermutations.reserve(mPermutationCount);
     }
 
-    for (std::size_t i = 0; i < permutations.count(); ++i) {
-        auto front = permutations.frontVisible(i);
-        auto back = permutations.backVisible(i);
+    do {
+        auto front = buildingsVisible(sequence.cbegin(), sequence.cend());
+        auto back = buildingsVisible(sequence.crbegin(), sequence.crend());
 
-        for (std::size_t j = 0; j < cluePairs.size(); ++j) {
-            if (cluePairs[j].isEmpty()) {
+        for (std::size_t i = 0; i < cluePairs.size(); ++i) {
+            if (cluePairs[i].isEmpty()) {
                 continue;
             }
-            if (!cluePairs[j].frontIsEmpty() && cluePairs[j].front() != front) {
+            if (!cluePairs[i].frontIsEmpty() && cluePairs[i].front() != front) {
                 continue;
             }
-            if (!cluePairs[j].backIsEmpty() && cluePairs[j].back() != back) {
+            if (!cluePairs[i].backIsEmpty() && cluePairs[i].back() != back) {
                 continue;
             }
-            auto fields = rows[j].getFields();
+            auto fields = rows[i].getFields();
 
-            auto permutation = permutations[i];
-            if (!existingSkyscrapersInPermutation(fields, permutation)) {
+            if (!existingSkyscrapersInPermutation(fields, sequence)) {
                 continue;
             }
-            results[j].emplace_back(permutation);
+            mCluePairsWithPermutations[i].emplace_back(sequence.begin(),
+                                                       sequence.end());
+
+            // std::copy(sequence.begin(), sequence.end(), p);
+            // p += mSize;
         }
-    }
+    } while (std::next_permutation(sequence.begin(), sequence.end()));
+};
 
-    return results;
+std::vector<std::vector<int>> Permutations::permutationsOfCluePair(int idx)
+{
+    return mCluePairsWithPermutations[idx];
 }
 
-std::vector<Slice>
-makeSlices(std::vector<std::vector<Span<int>>> &possiblePermutations,
-           std::vector<Row> &rows)
+std::vector<Slice> makeSlices(Permutations &permutations,
+                              std::vector<Row> &rows,
+                              const std::vector<CluePair> &cluePairs)
 {
     std::vector<Slice> slices;
-    slices.reserve(possiblePermutations.size());
+    slices.reserve(rows.size());
 
-    for (std::size_t i = 0; i < possiblePermutations.size(); ++i) {
-        slices.emplace_back(Slice{std::move(possiblePermutations[i]), rows[i]});
+    for (std::size_t i = 0; i < cluePairs.size(); ++i) {
+        slices.emplace_back(
+            Slice{permutations.permutationsOfCluePair(i), rows[i]});
     }
 
     return slices;
@@ -1402,38 +1370,36 @@ SolvePuzzle(const std::vector<int> &clues,
         insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
     }
 
-    auto t1 = std::chrono::high_resolution_clock::now();
+    //    auto t1 = std::chrono::high_resolution_clock::now();
 
-    Permutations permutations(boardSize);
+    Permutations permutations(boardSize, cluePairs, rows);
 
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << "generate permutations:"
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-                     .count()
-              << '\n';
+    //    auto t2 = std::chrono::high_resolution_clock::now();
+    //    std::cout << "generate permutations:"
+    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
+    //              - t1)
+    //                     .count()
+    //              << '\n';
 
-    auto t3 = std::chrono::high_resolution_clock::now();
+    //    auto t5 = std::chrono::high_resolution_clock::now();
 
-    auto possiblePermutations =
-        getPossiblePermutations(permutations, rows, cluePairs);
+    std::vector<Slice> slices = makeSlices(permutations, rows, cluePairs);
 
-    auto t4 = std::chrono::high_resolution_clock::now();
-    std::cout << "possible permutations:"
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3)
-                     .count()
-              << '\n';
+    //    auto t6 = std::chrono::high_resolution_clock::now();
+    //    std::cout << "make slices:"
+    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t6
+    //              - t5)
+    //                     .count()
+    //              << '\n';
 
-    auto t5 = std::chrono::high_resolution_clock::now();
-
-    std::vector<Slice> slices = makeSlices(possiblePermutations, rows);
-
-    auto t6 = std::chrono::high_resolution_clock::now();
-    std::cout << "make slices:"
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5)
-                     .count()
-              << '\n';
-
+    int count = 0;
     for (;;) {
+        ++count;
+
+        if (count > 1000) {
+            debug_print(board);
+            break;
+        }
         bool allFull = true;
         for (std::size_t i = 0; i < slices.size(); ++i) {
             if (slices[i].isSolved()) {
