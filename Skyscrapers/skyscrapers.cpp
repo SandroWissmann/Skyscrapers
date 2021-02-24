@@ -1272,22 +1272,32 @@ bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
 
 class Permutations {
 public:
-    Permutations(std::size_t size, const std::vector<CluePair> &cluePairs,
-                 const std::vector<Row> &rows);
+    Permutations(std::size_t size, Span<CluePair> cluePairs, Span<Row> rows);
 
     std::vector<std::vector<int>> permutationsOfCluePair(int idx);
 
 private:
+    void heapPermutate(std::vector<int> &sequence, int n);
+
+    void addSequenceToCluePaits(const std::vector<int> &sequence);
+
+    bool permutationFitsCluePair(const CluePair &cluePair, int front, int back);
+
+    void swap(int *x, int *y);
+
+    Span<CluePair> mCluePairs;
+    Span<Row> mRows;
+
     std::size_t mSize;
     std::size_t mPermutationCount;
     std::vector<std::vector<std::vector<int>>> mCluePairsWithPermutations;
     // std::vector<int> mPermutations;
 };
 
-Permutations::Permutations(std::size_t size,
-                           const std::vector<CluePair> &cluePairs,
-                           const std::vector<Row> &rows)
-    : mSize{size}, mCluePairsWithPermutations(cluePairs.size())
+Permutations::Permutations(std::size_t size, Span<CluePair> cluePairs,
+                           Span<Row> rows)
+    : mCluePairs(cluePairs), mRows{rows}, mSize{size},
+      mCluePairsWithPermutations(cluePairs.size())
 {
     assert(cluePairs.size() == rows.size());
     std::vector<int> sequence(mSize);
@@ -1306,13 +1316,7 @@ Permutations::Permutations(std::size_t size,
         auto back = buildingsVisible(sequence.crbegin(), sequence.crend());
 
         for (std::size_t i = 0; i < cluePairs.size(); ++i) {
-            if (cluePairs[i].isEmpty()) {
-                continue;
-            }
-            if (!cluePairs[i].frontIsEmpty() && cluePairs[i].front() != front) {
-                continue;
-            }
-            if (!cluePairs[i].backIsEmpty() && cluePairs[i].back() != back) {
+            if (!permutationFitsCluePair(cluePairs[i], front, back)) {
                 continue;
             }
             auto fields = rows[i].getFields();
@@ -1332,6 +1336,74 @@ Permutations::Permutations(std::size_t size,
 std::vector<std::vector<int>> Permutations::permutationsOfCluePair(int idx)
 {
     return mCluePairsWithPermutations[idx];
+}
+
+void Permutations::heapPermutate(std::vector<int> &sequence, int n)
+{
+    int i;
+    // Print the sequence if the heap top reaches to the 1.
+    if (n == 1) {
+        addSequenceToCluePaits(sequence);
+    }
+    else {
+        // Fix a number at the heap top until only two one element remaining and
+        // permute remaining.
+        for (i = 0; i < n; i++) {
+            heapPermutate(sequence, n - 1);
+            // If odd then swap the value at the start index with the n-1.
+            if (n % 2 == 1) {
+                swap(&sequence[0], &sequence[n - 1]);
+            }
+            // If even then swap the value at the 'i' index with the n-1.
+            else {
+                swap(&sequence[i], &sequence[n - 1]);
+            }
+        }
+    }
+}
+
+void Permutations::addSequenceToCluePaits(const std::vector<int> &sequence)
+{
+    auto front = buildingsVisible(sequence.cbegin(), sequence.cend());
+    auto back = buildingsVisible(sequence.crbegin(), sequence.crend());
+
+    for (std::size_t i = 0; i < mCluePairs.size(); ++i) {
+        if (!permutationFitsCluePair(mCluePairs[i], front, back)) {
+            continue;
+        }
+        auto fields = mRows[i].getFields();
+
+        if (!existingSkyscrapersInPermutation(fields, sequence)) {
+            continue;
+        }
+        mCluePairsWithPermutations[i].emplace_back(sequence.begin(),
+                                                   sequence.end());
+
+        // std::copy(sequence.begin(), sequence.end(), p);
+        // p += mSize;
+    }
+}
+
+bool Permutations::permutationFitsCluePair(const CluePair &cluePair, int front,
+                                           int back)
+{
+    if (cluePair.isEmpty()) {
+        return false;
+    }
+    if (!cluePair.frontIsEmpty() && cluePair.front() != front) {
+        return false;
+    }
+    if (!cluePair.backIsEmpty() && cluePair.back() != back) {
+        return false;
+    }
+    return true;
+}
+
+void Permutations::swap(int *x, int *y)
+{
+    int temp = *x;
+    *x = *y;
+    *y = temp;
 }
 
 std::vector<Slice> makeSlices(Permutations &permutations,
@@ -1372,7 +1444,8 @@ SolvePuzzle(const std::vector<int> &clues,
 
     //    auto t1 = std::chrono::high_resolution_clock::now();
 
-    Permutations permutations(boardSize, cluePairs, rows);
+    Permutations permutations(boardSize, Span{&cluePairs[0], cluePairs.size()},
+                              Span{&rows[0], rows.size()});
 
     //    auto t2 = std::chrono::high_resolution_clock::now();
     //    std::cout << "generate permutations:"
