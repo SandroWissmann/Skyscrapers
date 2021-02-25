@@ -1277,13 +1277,9 @@ public:
     std::vector<std::vector<int>> permutationsOfCluePair(int idx);
 
 private:
-    void heapPermutate(std::vector<int> &sequence, int n);
-
-    void addSequenceToCluePaits(const std::vector<int> &sequence);
+    void addSequenceToCluePairs(const std::vector<int> &sequence);
 
     bool permutationFitsCluePair(const CluePair &cluePair, int front, int back);
-
-    void swap(int *x, int *y);
 
     Span<CluePair> mCluePairs;
     Span<Row> mRows;
@@ -1312,24 +1308,9 @@ Permutations::Permutations(std::size_t size, Span<CluePair> cluePairs,
     }
 
     do {
-        auto front = buildingsVisible(sequence.cbegin(), sequence.cend());
-        auto back = buildingsVisible(sequence.crbegin(), sequence.crend());
-
-        for (std::size_t i = 0; i < cluePairs.size(); ++i) {
-            if (!permutationFitsCluePair(cluePairs[i], front, back)) {
-                continue;
-            }
-            auto fields = rows[i].getFields();
-
-            if (!existingSkyscrapersInPermutation(fields, sequence)) {
-                continue;
-            }
-            mCluePairsWithPermutations[i].emplace_back(sequence.begin(),
-                                                       sequence.end());
-
-            // std::copy(sequence.begin(), sequence.end(), p);
-            // p += mSize;
-        }
+        addSequenceToCluePairs(sequence);
+        //         std::copy(sequence.begin(), sequence.end(), p);
+        //         p += mSize;
     } while (std::next_permutation(sequence.begin(), sequence.end()));
 };
 
@@ -1338,31 +1319,7 @@ std::vector<std::vector<int>> Permutations::permutationsOfCluePair(int idx)
     return mCluePairsWithPermutations[idx];
 }
 
-void Permutations::heapPermutate(std::vector<int> &sequence, int n)
-{
-    int i;
-    // Print the sequence if the heap top reaches to the 1.
-    if (n == 1) {
-        addSequenceToCluePaits(sequence);
-    }
-    else {
-        // Fix a number at the heap top until only two one element remaining and
-        // permute remaining.
-        for (i = 0; i < n; i++) {
-            heapPermutate(sequence, n - 1);
-            // If odd then swap the value at the start index with the n-1.
-            if (n % 2 == 1) {
-                swap(&sequence[0], &sequence[n - 1]);
-            }
-            // If even then swap the value at the 'i' index with the n-1.
-            else {
-                swap(&sequence[i], &sequence[n - 1]);
-            }
-        }
-    }
-}
-
-void Permutations::addSequenceToCluePaits(const std::vector<int> &sequence)
+void Permutations::addSequenceToCluePairs(const std::vector<int> &sequence)
 {
     auto front = buildingsVisible(sequence.cbegin(), sequence.cend());
     auto back = buildingsVisible(sequence.crbegin(), sequence.crend());
@@ -1378,9 +1335,6 @@ void Permutations::addSequenceToCluePaits(const std::vector<int> &sequence)
         }
         mCluePairsWithPermutations[i].emplace_back(sequence.begin(),
                                                    sequence.end());
-
-        // std::copy(sequence.begin(), sequence.end(), p);
-        // p += mSize;
     }
 }
 
@@ -1397,13 +1351,6 @@ bool Permutations::permutationFitsCluePair(const CluePair &cluePair, int front,
         return false;
     }
     return true;
-}
-
-void Permutations::swap(int *x, int *y)
-{
-    int temp = *x;
-    *x = *y;
-    *y = temp;
 }
 
 std::vector<Slice> makeSlices(Permutations &permutations,
