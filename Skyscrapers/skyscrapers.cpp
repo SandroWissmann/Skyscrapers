@@ -993,7 +993,7 @@ std::vector<CluePair> makeCluePairs(const std::vector<int> &clues)
     return cluePairs;
 }
 
-bool isValidPermutation(const std::vector<int> &permutation,
+bool isValidPermutation(const Span<int> &permutation,
                         const std::vector<Field *> fields)
 {
     auto permIt = permutation.cbegin();
@@ -1045,135 +1045,6 @@ std::vector<Field> copyField(const std::vector<Field *> &currFields)
         result.emplace_back(Field{*currField});
     }
     return result;
-}
-
-class Slice {
-public:
-    Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row);
-
-    void guessSkyscraperOutOfNeighbourNopes();
-
-    bool isSolved() const;
-
-    void solveFromPossiblePermutations();
-
-    bool reducePossiblePermutations();
-
-private:
-    std::vector<std::set<int>> getPossibleBuildings() const;
-
-    FieldElements
-    getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
-
-    std::vector<std::vector<int>> mPossiblePermutations;
-    Row *mRow;
-};
-
-Slice::Slice(std::vector<std::vector<int>> &&possiblePermutations, Row &row)
-    : mPossiblePermutations{possiblePermutations}, mRow{&row}
-{
-    if (mPossiblePermutations.empty()) {
-        return;
-    }
-
-    auto possibleBuildings = getPossibleBuildings();
-    auto fieldElements = getFieldElements(possibleBuildings);
-
-    mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-    mRow->addNopes(fieldElements.nopes, Row::Direction::front);
-}
-
-void Slice::guessSkyscraperOutOfNeighbourNopes()
-{
-    mRow->guessSkyscraperOutOfNeighbourNopes();
-}
-
-bool Slice::isSolved() const
-{
-    return mRow->allFieldsContainSkyscraper();
-}
-
-void Slice::solveFromPossiblePermutations()
-{
-    if (mPossiblePermutations.empty()) {
-        return;
-    }
-
-    while (reducePossiblePermutations()) {
-
-        auto lastFields = copyField(mRow->getFields());
-
-        auto possibleBuildings = getPossibleBuildings();
-        auto fieldElements = getFieldElements(possibleBuildings);
-
-        mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-        mRow->addNopes(fieldElements.nopes, Row::Direction::front);
-
-        if (fieldsIdentical(lastFields, mRow->getFields())) {
-            break;
-        }
-    }
-}
-
-bool Slice::reducePossiblePermutations()
-{
-    auto startSize = mPossiblePermutations.size();
-    auto it = mPossiblePermutations.begin();
-
-    auto fields = mRow->getFields();
-
-    while (it != mPossiblePermutations.end()) {
-
-        if (!isValidPermutation(*it, fields)) {
-            it = mPossiblePermutations.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-
-    return startSize > mPossiblePermutations.size();
-}
-
-std::vector<std::set<int>> Slice::getPossibleBuildings() const
-{
-    std::vector<std::set<int>> possibleBuildingsOnFields(mRow->size());
-
-    for (const auto &permutation : mPossiblePermutations) {
-        for (std::size_t i = 0; i < permutation.size(); ++i) {
-            possibleBuildingsOnFields[i].insert(permutation[i]);
-        }
-    }
-    return possibleBuildingsOnFields;
-}
-
-FieldElements
-Slice::getFieldElements(const std::vector<std::set<int>> &possibleBuildings)
-{
-    FieldElements fieldElements;
-    fieldElements.skyscrapers.reserve(possibleBuildings.size());
-    fieldElements.nopes.reserve(possibleBuildings.size());
-
-    for (std::size_t i = 0; i < possibleBuildings.size(); ++i) {
-        if (possibleBuildings[i].size() == 1) {
-            fieldElements.skyscrapers.emplace_back(
-                *possibleBuildings[i].begin());
-            fieldElements.nopes.emplace_back(std::vector<int>{});
-        }
-        else {
-            std::vector<int> nopes;
-            nopes.reserve(possibleBuildings.size());
-            for (std::size_t j = 0; j < possibleBuildings.size(); ++j) {
-                auto it = possibleBuildings[i].find(j + 1);
-                if (it == possibleBuildings[i].end()) {
-                    nopes.emplace_back(j + 1);
-                }
-            }
-            fieldElements.skyscrapers.emplace_back(0);
-            fieldElements.nopes.emplace_back(nopes);
-        }
-    }
-    return fieldElements;
 }
 
 std::vector<Row> makeRows(std::vector<std::vector<Field>> &fields)
@@ -1274,10 +1145,13 @@ class Permutations {
 public:
     Permutations(std::size_t size, Span<CluePair> cluePairs, Span<Row> rows);
 
-    std::vector<std::vector<int>> permutationsOfCluePair(int idx);
+    Span<int> operator[](std::size_t permutationIndex) const;
+
+    std::vector<std::size_t> permutationIndexs(std::size_t cluePairIndex) const;
 
 private:
-    void addSequenceToCluePairs(const std::vector<int> &sequence);
+    void addSequenceToCluePairs(const std::vector<int> &sequence,
+                                int currIndex);
 
     bool permutationFitsCluePair(const CluePair &cluePair, int front, int back);
 
@@ -1286,40 +1160,51 @@ private:
 
     std::size_t mSize;
     std::size_t mPermutationCount;
-    std::vector<std::vector<std::vector<int>>> mCluePairsWithPermutations;
-    // std::vector<int> mPermutations;
+    std::vector<std::vector<std::size_t>> mCluePairsPermutationIndexes;
+
+    std::vector<int> mPermutations;
 };
 
 Permutations::Permutations(std::size_t size, Span<CluePair> cluePairs,
                            Span<Row> rows)
     : mCluePairs(cluePairs), mRows{rows}, mSize{size},
-      mCluePairsWithPermutations(cluePairs.size())
+      mCluePairsPermutationIndexes(cluePairs.size())
 {
     assert(cluePairs.size() == rows.size());
     std::vector<int> sequence(mSize);
     std::iota(sequence.begin(), sequence.end(), 1);
     mPermutationCount = factorial(sequence.size());
 
-    // mPermutations.reserve(mPermutationCount * mSize);
-    // int *p = &mPermutations[0];
+    mPermutations.reserve(mPermutationCount * mSize);
+    int *p = &mPermutations[0];
 
-    for (auto &cluePairWithPermutations : mCluePairsWithPermutations) {
-        cluePairWithPermutations.reserve(mPermutationCount);
+    for (auto &cluePairPermutationIndexes : mCluePairsPermutationIndexes) {
+        cluePairPermutationIndexes.reserve(mPermutationCount);
     }
 
+    std::size_t currIndex = 0;
     do {
-        addSequenceToCluePairs(sequence);
-        //         std::copy(sequence.begin(), sequence.end(), p);
-        //         p += mSize;
+        addSequenceToCluePairs(sequence, currIndex);
+        std::copy(sequence.begin(), sequence.end(), p);
+        p += mSize;
+        ++currIndex;
     } while (std::next_permutation(sequence.begin(), sequence.end()));
 };
 
-std::vector<std::vector<int>> Permutations::permutationsOfCluePair(int idx)
+Span<int> Permutations::operator[](std::size_t elem) const
 {
-    return mCluePairsWithPermutations[idx];
+    auto ptr = &mPermutations[elem * mSize];
+    return Span{ptr, mSize};
 }
 
-void Permutations::addSequenceToCluePairs(const std::vector<int> &sequence)
+std::vector<std::size_t>
+Permutations::permutationIndexs(std::size_t cluePairIndex) const
+{
+    return mCluePairsPermutationIndexes[cluePairIndex];
+}
+
+void Permutations::addSequenceToCluePairs(const std::vector<int> &sequence,
+                                          int currIndex)
 {
     auto front = buildingsVisible(sequence.cbegin(), sequence.cend());
     auto back = buildingsVisible(sequence.crbegin(), sequence.crend());
@@ -1333,8 +1218,7 @@ void Permutations::addSequenceToCluePairs(const std::vector<int> &sequence)
         if (!existingSkyscrapersInPermutation(fields, sequence)) {
             continue;
         }
-        mCluePairsWithPermutations[i].emplace_back(sequence.begin(),
-                                                   sequence.end());
+        mCluePairsPermutationIndexes[i].emplace_back(currIndex);
     }
 }
 
@@ -1353,6 +1237,141 @@ bool Permutations::permutationFitsCluePair(const CluePair &cluePair, int front,
     return true;
 }
 
+class Slice {
+public:
+    Slice(Permutations &permutations,
+          const std::vector<std::size_t> &permutationIndexes, Row &row);
+
+    void guessSkyscraperOutOfNeighbourNopes();
+
+    bool isSolved() const;
+
+    void solveFromPossiblePermutations();
+
+    bool reducePossiblePermutations();
+
+private:
+    std::vector<std::set<int>> getPossibleBuildings() const;
+
+    FieldElements
+    getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
+
+    Permutations *mPermutations;
+    std::vector<std::size_t> mPermutationIndexes;
+    Row *mRow;
+};
+
+Slice::Slice(Permutations &permutations,
+             const std::vector<std::size_t> &permutationIndexes, Row &row)
+    : mPermutations{&permutations},
+      mPermutationIndexes{permutationIndexes}, mRow{&row}
+{
+    if (permutationIndexes.empty()) {
+        return;
+    }
+
+    auto possibleBuildings = getPossibleBuildings();
+    auto fieldElements = getFieldElements(possibleBuildings);
+
+    mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
+    mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+}
+
+void Slice::guessSkyscraperOutOfNeighbourNopes()
+{
+    mRow->guessSkyscraperOutOfNeighbourNopes();
+}
+
+bool Slice::isSolved() const
+{
+    return mRow->allFieldsContainSkyscraper();
+}
+
+void Slice::solveFromPossiblePermutations()
+{
+    if (mPermutationIndexes.empty()) {
+        return;
+    }
+
+    while (reducePossiblePermutations()) {
+
+        auto lastFields = copyField(mRow->getFields());
+
+        auto possibleBuildings = getPossibleBuildings();
+        auto fieldElements = getFieldElements(possibleBuildings);
+
+        mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
+        mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+
+        if (fieldsIdentical(lastFields, mRow->getFields())) {
+            break;
+        }
+    }
+}
+
+bool Slice::reducePossiblePermutations()
+{
+    auto startSize = mPermutationIndexes.size();
+    auto it = mPermutationIndexes.begin();
+
+    auto fields = mRow->getFields();
+
+    while (it != mPermutationIndexes.end()) {
+
+        if (!isValidPermutation(mPermutations->operator[](*it), fields)) {
+            it = mPermutationIndexes.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    return startSize > mPermutationIndexes.size();
+}
+
+std::vector<std::set<int>> Slice::getPossibleBuildings() const
+{
+    std::vector<std::set<int>> possibleBuildingsOnFields(mRow->size());
+
+    for (const auto &permutationIndex : mPermutationIndexes) {
+
+        auto permutation = mPermutations->operator[](permutationIndex);
+        for (std::size_t i = 0; i < permutation.size(); ++i) {
+            possibleBuildingsOnFields[i].insert(permutation[i]);
+        }
+    }
+    return possibleBuildingsOnFields;
+}
+
+FieldElements
+Slice::getFieldElements(const std::vector<std::set<int>> &possibleBuildings)
+{
+    FieldElements fieldElements;
+    fieldElements.skyscrapers.reserve(possibleBuildings.size());
+    fieldElements.nopes.reserve(possibleBuildings.size());
+
+    for (std::size_t i = 0; i < possibleBuildings.size(); ++i) {
+        if (possibleBuildings[i].size() == 1) {
+            fieldElements.skyscrapers.emplace_back(
+                *possibleBuildings[i].begin());
+            fieldElements.nopes.emplace_back(std::vector<int>{});
+        }
+        else {
+            std::vector<int> nopes;
+            nopes.reserve(possibleBuildings.size());
+            for (std::size_t j = 0; j < possibleBuildings.size(); ++j) {
+                auto it = possibleBuildings[i].find(j + 1);
+                if (it == possibleBuildings[i].end()) {
+                    nopes.emplace_back(j + 1);
+                }
+            }
+            fieldElements.skyscrapers.emplace_back(0);
+            fieldElements.nopes.emplace_back(nopes);
+        }
+    }
+    return fieldElements;
+}
+
 std::vector<Slice> makeSlices(Permutations &permutations,
                               std::vector<Row> &rows,
                               const std::vector<CluePair> &cluePairs)
@@ -1362,7 +1381,7 @@ std::vector<Slice> makeSlices(Permutations &permutations,
 
     for (std::size_t i = 0; i < cluePairs.size(); ++i) {
         slices.emplace_back(
-            Slice{permutations.permutationsOfCluePair(i), rows[i]});
+            Slice{permutations, permutations.permutationIndexs(i), rows[i]});
     }
 
     return slices;
@@ -1389,28 +1408,28 @@ SolvePuzzle(const std::vector<int> &clues,
         insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
     }
 
-    //    auto t1 = std::chrono::high_resolution_clock::now();
+    auto t1 = std::chrono::high_resolution_clock::now();
 
     Permutations permutations(boardSize, Span{&cluePairs[0], cluePairs.size()},
                               Span{&rows[0], rows.size()});
 
-    //    auto t2 = std::chrono::high_resolution_clock::now();
-    //    std::cout << "generate permutations:"
-    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
-    //              - t1)
-    //                     .count()
-    //              << '\n';
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "generate permutations:"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                     .count()
+              << '\n';
 
-    //    auto t5 = std::chrono::high_resolution_clock::now();
+    auto t3 = std::chrono::high_resolution_clock::now();
 
     std::vector<Slice> slices = makeSlices(permutations, rows, cluePairs);
 
-    //    auto t6 = std::chrono::high_resolution_clock::now();
-    //    std::cout << "make slices:"
-    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t6
-    //              - t5)
-    //                     .count()
-    //              << '\n';
+    auto t4 = std::chrono::high_resolution_clock::now();
+    std::cout << "make slices:"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3)
+                     .count()
+              << '\n';
+
+    auto t5 = std::chrono::high_resolution_clock::now();
 
     int count = 0;
     for (;;) {
@@ -1437,6 +1456,13 @@ SolvePuzzle(const std::vector<int> &clues,
             break;
         }
     }
+
+    auto t6 = std::chrono::high_resolution_clock::now();
+    std::cout << "solving loop:"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5)
+                     .count()
+              << '\n';
+
     return board.skyscrapers;
 }
 
