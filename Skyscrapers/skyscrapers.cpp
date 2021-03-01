@@ -380,7 +380,7 @@ void Field::insertSkyscraper(int skyscraper)
     }
     *mSkyscraper = skyscraper;
     mHasSkyscraper = true;
-    // potentially performance problem ???
+
     mNopes->clear();
 }
 void Field::insertNope(int nope)
@@ -923,12 +923,6 @@ public:
     bool backIsEmpty() const;
     bool isEmpty() const;
 
-    bool operator<(const CluePair &other) const
-    {
-        return front() < other.front() ||
-               (front() == other.front() && back() < other.back());
-    }
-
 private:
     int mFront;
     int mBack;
@@ -1408,28 +1402,30 @@ SolvePuzzle(const std::vector<int> &clues,
         insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
     }
 
-    auto t1 = std::chrono::high_resolution_clock::now();
+    //    auto t1 = std::chrono::high_resolution_clock::now();
 
     Permutations permutations(boardSize, Span{&cluePairs[0], cluePairs.size()},
                               Span{&rows[0], rows.size()});
 
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << "generate permutations:"
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-                     .count()
-              << '\n';
+    //    auto t2 = std::chrono::high_resolution_clock::now();
+    //    std::cout << "generate permutations:"
+    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
+    //              - t1)
+    //                     .count()
+    //              << '\n';
 
-    auto t3 = std::chrono::high_resolution_clock::now();
+    //    auto t3 = std::chrono::high_resolution_clock::now();
 
     std::vector<Slice> slices = makeSlices(permutations, rows, cluePairs);
 
-    auto t4 = std::chrono::high_resolution_clock::now();
-    std::cout << "make slices:"
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3)
-                     .count()
-              << '\n';
+    //    auto t4 = std::chrono::high_resolution_clock::now();
+    //    std::cout << "make slices:"
+    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t4
+    //              - t3)
+    //                     .count()
+    //              << '\n';
 
-    auto t5 = std::chrono::high_resolution_clock::now();
+    //    auto t5 = std::chrono::high_resolution_clock::now();
 
     int count = 0;
     for (;;) {
@@ -1457,11 +1453,12 @@ SolvePuzzle(const std::vector<int> &clues,
         }
     }
 
-    auto t6 = std::chrono::high_resolution_clock::now();
-    std::cout << "solving loop:"
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5)
-                     .count()
-              << '\n';
+    //    auto t6 = std::chrono::high_resolution_clock::now();
+    //    std::cout << "solving loop:"
+    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t6
+    //              - t5)
+    //                     .count()
+    //              << '\n';
 
     return board.skyscrapers;
 }
@@ -1470,13 +1467,3 @@ std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
 {
     return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
 }
-
-//    auto t1 = std::chrono::high_resolution_clock::now();
-
-//    auto t2 = std::chrono::high_resolution_clock::now();
-
-//    std::cout << "perm time:"
-//              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
-//              - t1)
-//                     .count()
-//              << '\n';
