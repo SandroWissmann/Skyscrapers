@@ -39,6 +39,7 @@ include_directories(${GTestIncludes})
 
 add_executable(
     SkyscrapersTest
+    testdataprovider.h
     tst_permutationtest.h
     tst_backtrackingtest.h
     main.cpp
