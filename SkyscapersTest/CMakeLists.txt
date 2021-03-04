@@ -39,9 +39,11 @@ include_directories(${GTestIncludes})
 
 add_executable(
     SkyscrapersTest
-    tst_skyscraperstest.h
+    tst_permutationtest.h
+    tst_backtrackingtest.h
     main.cpp
-    ../Skyscrapers/skyscrapers.cpp
+    ../Skyscrapers/permutation.cpp
+    ../Skyscrapers/backtracking.cpp
                ${GTestFiles})
 add_test(NAME SkyscrapersTest COMMAND SkyscrapersTest)
 target_link_libraries(SkyscrapersTest PRIVATE Threads::Threads)

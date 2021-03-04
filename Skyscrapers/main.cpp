@@ -1,4 +1,5 @@
-#include "skyscrapers.h"
+#include "backtracking.h"
+#include "permutation.h"
 
 int main()
 {

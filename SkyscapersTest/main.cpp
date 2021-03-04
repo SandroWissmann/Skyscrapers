@@ -1,4 +1,5 @@
-#include "tst_skyscraperstest.h"
+#include "tst_backtrackingtest.h"
+#include "tst_permutationtest.h"
 
 #include <gtest/gtest.h>
 

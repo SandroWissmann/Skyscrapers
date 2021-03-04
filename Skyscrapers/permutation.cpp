@@ -13,6 +13,8 @@
 #include <iomanip>
 #include <iostream>
 
+namespace permutation {
+
 template <typename T> class Span {
 public:
     using element_type = T;
@@ -153,7 +155,7 @@ bool Nopes::sizeReached() const
 int Nopes::missingNumberInSequence() const
 {
     assert(sizeReached());
-    return ::missingNumberInSequence(mValues.begin(), mValues.end());
+    return permutation::missingNumberInSequence(mValues.begin(), mValues.end());
 }
 
 bool Nopes::contains(int value) const
@@ -1427,14 +1429,7 @@ SolvePuzzle(const std::vector<int> &clues,
 
     //    auto t5 = std::chrono::high_resolution_clock::now();
 
-    int count = 0;
     for (;;) {
-        ++count;
-
-        if (count > 1000) {
-            debug_print(board);
-            break;
-        }
         bool allFull = true;
         for (std::size_t i = 0; i < slices.size(); ++i) {
             if (slices[i].isSolved()) {
@@ -1467,3 +1462,5 @@ std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
 {
     return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
 }
+
+} // namespace permutation
