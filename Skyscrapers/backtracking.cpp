@@ -181,6 +181,11 @@ struct RowData {
     RowData(std::size_t boardSize);
     RowData();
 
+    void reverse();
+
+    void shrinkToFit();
+    void removeNopesOnSkyscrapers();
+
     std::vector<int> skyscrapers{};
     std::vector<std::unordered_set<int>> nopes{};
 };
@@ -193,6 +198,20 @@ RowData::RowData(std::size_t boardSize)
     : skyscrapers{std::vector<int>(boardSize, 0)},
       nopes{std::vector<std::unordered_set<int>>(boardSize,
                                                  std::unordered_set<int>{})}
+{
+}
+
+void RowData::reverse()
+{
+    std::reverse(skyscrapers.begin(), skyscrapers.end());
+    std::reverse(nopes.begin(), nopes.end());
+}
+
+void RowData::shrinkToFit()
+{
+}
+
+void RowData::removeNopesOnSkyscrapers()
 {
 }
 
@@ -241,6 +260,80 @@ getRowsDataFromClues(const std::vector<int> &clues, std::size_t boardSize)
     return rowsData;
 }
 
+std::optional<RowData> merge(std::optional<RowData> optFrontRowData,
+                             std::optional<RowData> optBackRowData)
+{
+    if (!optFrontRowData && !optBackRowData) {
+        return {};
+    }
+    if (!optFrontRowData) {
+        optBackRowData->reverse();
+        return optBackRowData;
+    }
+    if (!optBackRowData) {
+        return optFrontRowData;
+    }
+
+    auto size = optFrontRowData->skyscrapers.size();
+    RowData rowData{size};
+
+    assert(optFrontRowData->skyscrapers.size() ==
+           optFrontRowData->nopes.size());
+    assert(optBackRowData->skyscrapers.size() == optBackRowData->nopes.size());
+    assert(optFrontRowData->skyscrapers.size() ==
+           optBackRowData->skyscrapers.size());
+
+    optBackRowData->reverse();
+
+    for (std::size_t i = 0; i < optFrontRowData->skyscrapers.size(); ++i) {
+
+        auto frontSkyscraper = optFrontRowData->skyscrapers[i];
+        auto backSkyscraper = optBackRowData->skyscrapers[i];
+
+        if (frontSkyscraper != 0 && backSkyscraper != 0) {
+            assert(frontSkyscraper == backSkyscraper);
+            rowData.skyscrapers[i] = frontSkyscraper;
+        }
+        else if (frontSkyscraper != 0) {
+            rowData.skyscrapers[i] = frontSkyscraper;
+            rowData.nopes[i].clear();
+        }
+        else { // backSkyscraper != 0
+            rowData.skyscrapers[i] = backSkyscraper;
+            rowData.nopes[i].clear();
+        }
+
+        if (rowData.skyscrapers[i] != 0) {
+            continue;
+        }
+        rowData.nopes[i].insert(optFrontRowData->nopes[i].begin(),
+                                optFrontRowData->nopes[i].end());
+        rowData.nopes[i].insert(optBackRowData->nopes[i].begin(),
+                                optBackRowData->nopes[i].end());
+    }
+    return {rowData};
+}
+
+void mergeRowsDatafromFrontAndBack(
+    std::vector<std::optional<RowData>> &rowsData)
+{
+    std::size_t startOffset = rowsData.size() / 4 * 3 - 1;
+    std::size_t offset = startOffset;
+
+    for (std::size_t frontIdx = 0; frontIdx < rowsData.size() / 2;
+         ++frontIdx, offset -= 2) {
+
+        if (frontIdx == rowsData.size() / 4) {
+            offset = startOffset;
+        }
+
+        int backIdx = frontIdx + offset;
+
+        rowsData[frontIdx] = merge(rowsData[frontIdx], rowsData[backIdx]);
+    }
+    rowsData.erase(rowsData.begin() + rowsData.size() / 2, rowsData.end());
+}
+
 std::vector<std::vector<int>>
 SolvePuzzle(const std::vector<int> &clues,
             std::vector<std::vector<int>> startingGrid, int)
@@ -250,6 +343,7 @@ SolvePuzzle(const std::vector<int> &clues,
     std::size_t boardSize = clues.size() / 4;
 
     auto rowsData = getRowsDataFromClues(clues, boardSize);
+    mergeRowsDatafromFrontAndBack(rowsData);
 
     return {};
 }
