@@ -183,7 +183,6 @@ struct RowData {
 
     void reverse();
 
-    void shrinkToFit();
     void removeNopesOnSkyscrapers();
 
     std::vector<int> skyscrapers{};
@@ -207,12 +206,14 @@ void RowData::reverse()
     std::reverse(nopes.begin(), nopes.end());
 }
 
-void RowData::shrinkToFit()
-{
-}
-
 void RowData::removeNopesOnSkyscrapers()
 {
+    for (std::size_t i = 0; i < skyscrapers.size(); ++i) {
+        if (skyscrapers[i] == 0) {
+            continue;
+        }
+        nopes[i].clear();
+    }
 }
 
 std::optional<RowData> getRowDataFromClue(int clue, std::size_t boardSize)
@@ -311,6 +312,7 @@ std::optional<RowData> merge(std::optional<RowData> optFrontRowData,
         rowData.nopes[i].insert(optBackRowData->nopes[i].begin(),
                                 optBackRowData->nopes[i].end());
     }
+    rowData.removeNopesOnSkyscrapers();
     return {rowData};
 }
 
