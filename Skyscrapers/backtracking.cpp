@@ -249,18 +249,6 @@ std::optional<RowData> getRowDataFromClue(int clue, std::size_t boardSize)
     return {rowData};
 }
 
-std::vector<std::optional<RowData>>
-getRowsDataFromClues(const std::vector<int> &clues, std::size_t boardSize)
-{
-    std::vector<std::optional<RowData>> rowsData;
-    rowsData.reserve(clues.size());
-
-    for (const auto &clue : clues) {
-        rowsData.emplace_back(getRowDataFromClue(clue, boardSize));
-    }
-    return rowsData;
-}
-
 std::optional<RowData> merge(std::optional<RowData> optFrontRowData,
                              std::optional<RowData> optBackRowData)
 {
@@ -336,6 +324,19 @@ void mergeRowsDatafromFrontAndBack(
     rowsData.erase(rowsData.begin() + rowsData.size() / 2, rowsData.end());
 }
 
+std::vector<std::optional<RowData>>
+getRowsDataFromClues(const std::vector<int> &clues, std::size_t boardSize)
+{
+    std::vector<std::optional<RowData>> rowsData;
+    rowsData.reserve(clues.size());
+
+    for (const auto &clue : clues) {
+        rowsData.emplace_back(getRowDataFromClue(clue, boardSize));
+    }
+    mergeRowsDatafromFrontAndBack(rowsData);
+    return rowsData;
+}
+
 std::vector<std::vector<int>>
 SolvePuzzle(const std::vector<int> &clues,
             std::vector<std::vector<int>> startingGrid, int)
@@ -345,7 +346,6 @@ SolvePuzzle(const std::vector<int> &clues,
     std::size_t boardSize = clues.size() / 4;
 
     auto rowsData = getRowsDataFromClues(clues, boardSize);
-    mergeRowsDatafromFrontAndBack(rowsData);
 
     return {};
 }
