@@ -44,6 +44,15 @@ add_executable(
     tst_backtrackingtest.h
     main.cpp
     ../Skyscrapers/permutation.cpp
+    ../Skyscrapers/permutation/borderiterator.cpp
+    ../Skyscrapers/permutation/nopes.cpp
+    ../Skyscrapers/permutation/readdirection.cpp
+    ../Skyscrapers/permutation/board.cpp
+    ../Skyscrapers/permutation/field.cpp
+    ../Skyscrapers/permutation/row.cpp
+    ../Skyscrapers/permutation/cluepair.cpp
+    ../Skyscrapers/permutation/permutations.cpp
+    ../Skyscrapers/permutation/slice.cpp
     ../Skyscrapers/backtracking.cpp
                ${GTestFiles})
 add_test(NAME SkyscrapersTest COMMAND SkyscrapersTest)
