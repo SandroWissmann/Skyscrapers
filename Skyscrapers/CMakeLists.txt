@@ -32,7 +32,7 @@ add_executable(Skyscrapers
     backtracking/nopes.cpp
     backtracking/board.h
     backtracking/board.cpp
-    backtracking/rowdata.h
-    backtracking/rowdata.cpp
+    backtracking/cluehints.h
+    backtracking/cluehints.cpp
     main.cpp
     )

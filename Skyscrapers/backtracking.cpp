@@ -1,8 +1,8 @@
 #include "backtracking.h"
 
 #include "backtracking/board.h"
+#include "backtracking/cluehints.h"
 #include "backtracking/nopes.h"
-#include "backtracking/rowdata.h"
 
 #include <cassert>
 
@@ -16,7 +16,7 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::size_t boardSize = clues.size() / 4;
 
-    auto rowsData = getRowsDataFromClues(clues, boardSize);
+    auto rowsData = getClueHints(clues, boardSize);
 
     return {};
 }
