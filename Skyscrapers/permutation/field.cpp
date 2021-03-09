@@ -64,6 +64,7 @@ std::optional<int> Field::lastMissingNope() const
     return mNopes->missingNumberInSequence();
 }
 
+// not used
 std::vector<std::vector<Field>>
 makeFields(std::vector<std::vector<int>> &skyscrapers,
            std::vector<std::vector<Nopes>> &nopes)
@@ -73,6 +74,7 @@ makeFields(std::vector<std::vector<int>> &skyscrapers,
         row.reserve(fields.size());
     }
     for (std::size_t y = 0; y < skyscrapers.size(); ++y) {
+        fields[y].reserve(skyscrapers.size());
         for (std::size_t x = 0; x < skyscrapers[y].size(); ++x) {
             fields[y].emplace_back(Field{skyscrapers[y][x], nopes[y][x]});
         }
