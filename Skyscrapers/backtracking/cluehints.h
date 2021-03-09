@@ -2,7 +2,7 @@
 #define BACKTRACKING_CLUEHINTS_H
 
 #include <cstddef>
-#include <unordered_set>
+#include <optional>
 #include <vector>
 
 namespace backtracking {
@@ -15,7 +15,7 @@ struct ClueHints {
     void removeNopesOnSkyscrapers();
 
     std::vector<int> skyscrapers{};
-    std::vector<std::unordered_set<int>> nopes{};
+    std::vector<std::vector<int>> nopes{};
 };
 
 std::vector<std::optional<ClueHints>>

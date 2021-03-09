@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <unordered_set>
 
 namespace backtracking {
 
@@ -11,8 +12,7 @@ ClueHints::ClueHints()
 
 ClueHints::ClueHints(std::size_t boardSize)
     : skyscrapers{std::vector<int>(boardSize, 0)},
-      nopes{std::vector<std::unordered_set<int>>(boardSize,
-                                                 std::unordered_set<int>{})}
+      nopes{std::vector<std::vector<int>>(boardSize, std::vector<int>{})}
 {
 }
 
@@ -52,6 +52,10 @@ std::optional<ClueHints> getClueHints(int clue, std::size_t boardSize)
     }
 
     ClueHints clueHints{boardSize};
+
+    std::vector<std::unordered_set<int>> nopes(boardSize,
+                                               std::unordered_set<int>{});
+
     if (clue == static_cast<int>(boardSize)) {
         for (std::size_t i = 0; i < boardSize; ++i) {
             clueHints.skyscrapers[i] = i + 1;
@@ -61,8 +65,8 @@ std::optional<ClueHints> getClueHints(int clue, std::size_t boardSize)
         clueHints.skyscrapers[0] = boardSize;
     }
     else if (clue == 2) {
-        clueHints.nopes[0].insert(boardSize);
-        clueHints.nopes[1].insert(boardSize - 1);
+        nopes[0].insert(boardSize);
+        nopes[1].insert(boardSize - 1);
     }
     else {
         for (std::size_t fieldIdx = 0;
@@ -71,15 +75,20 @@ std::optional<ClueHints> getClueHints(int clue, std::size_t boardSize)
             for (std::size_t nopeValue = boardSize;
                  nopeValue >= (boardSize - (clue - 2) + fieldIdx);
                  --nopeValue) {
-                clueHints.nopes[fieldIdx].insert(nopeValue);
+                nopes[fieldIdx].insert(nopeValue);
             }
         }
+    }
+
+    assert(nopes.size() == clueHints.nopes.size());
+
+    for (std::size_t i = 0; i < nopes.size(); ++i) {
+        clueHints.nopes[i] = std::vector<int>(nopes[i].begin(), nopes[i].end());
     }
     return {clueHints};
 }
 
-void mergeClueHintsPerRow(
-    std::vector<std::optional<ClueHints>> &clueHints)
+void mergeClueHintsPerRow(std::vector<std::optional<ClueHints>> &clueHints)
 {
     std::size_t startOffset = clueHints.size() / 4 * 3 - 1;
     std::size_t offset = startOffset;
@@ -117,7 +126,8 @@ std::optional<ClueHints> merge(std::optional<ClueHints> optFrontClueHints,
 
     assert(optFrontClueHints->skyscrapers.size() ==
            optFrontClueHints->nopes.size());
-    assert(optBackClueHints->skyscrapers.size() == optBackClueHints->nopes.size());
+    assert(optBackClueHints->skyscrapers.size() ==
+           optBackClueHints->nopes.size());
     assert(optFrontClueHints->skyscrapers.size() ==
            optBackClueHints->skyscrapers.size());
 
@@ -144,10 +154,12 @@ std::optional<ClueHints> merge(std::optional<ClueHints> optFrontClueHints,
         if (clueHints.skyscrapers[i] != 0) {
             continue;
         }
-        clueHints.nopes[i].insert(optFrontClueHints->nopes[i].begin(),
-                                 optFrontClueHints->nopes[i].end());
-        clueHints.nopes[i].insert(optBackClueHints->nopes[i].begin(),
-                                 optBackClueHints->nopes[i].end());
+
+        std::unordered_set<int> nopes(optFrontClueHints->nopes[i].begin(),
+                                      optFrontClueHints->nopes[i].end());
+        nopes.insert(optBackClueHints->nopes[i].begin(),
+                     optBackClueHints->nopes[i].end());
+        clueHints.nopes[i] = std::vector<int>(nopes.begin(), nopes.end());
     }
     clueHints.removeNopesOnSkyscrapers();
     return {clueHints};
