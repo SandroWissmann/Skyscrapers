@@ -54,6 +54,10 @@ add_executable(
     ../Skyscrapers/permutation/permutations.cpp
     ../Skyscrapers/permutation/slice.cpp
     ../Skyscrapers/backtracking.cpp
+    ../Skyscrapers/backtracking/nopes.cpp
+    ../Skyscrapers/backtracking/board.cpp
+    ../Skyscrapers/backtracking/rowdata.cpp
+
                ${GTestFiles})
 add_test(NAME SkyscrapersTest COMMAND SkyscrapersTest)
 target_link_libraries(SkyscrapersTest PRIVATE Threads::Threads)
