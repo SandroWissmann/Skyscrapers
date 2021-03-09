@@ -18,6 +18,10 @@ SolvePuzzle(const std::vector<int> &clues,
 
     auto rowsData = getClueHints(clues, boardSize);
 
+    Board board{boardSize};
+
+    debug_print(board);
+
     return {};
 }
 

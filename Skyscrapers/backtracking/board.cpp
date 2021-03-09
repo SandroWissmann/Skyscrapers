@@ -1,26 +1,77 @@
 #include "board.h"
 
+#include "borderiterator.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 
 namespace backtracking {
 
-Board::Board(int size)
-    : skyscrapers{makeSkyscrapers(size)}, nopes{makeNopes(size)}
+Board::Board(std::size_t size)
+    : skyscrapers{makeSkyscrapers(size)}, nopes{makeNopes(size)},
+      mFields{std::vector<std::vector<Field>>(skyscrapers.size())}
 {
+    makeFields();
+    makeRows();
 }
 
-std::vector<std::vector<int>> Board::makeSkyscrapers(int size)
+std::vector<std::vector<int>> Board::makeSkyscrapers(std::size_t size)
 {
     std::vector<int> skyscraperRow(size, 0);
     return std::vector<std::vector<int>>(size, skyscraperRow);
 }
 
-std::vector<std::vector<Nopes>> Board::makeNopes(int size)
+std::vector<std::vector<Nopes>> Board::makeNopes(std::size_t size)
 {
-    std::vector<Nopes> nopesRow(size, Nopes{size - 1});
+    std::vector<Nopes> nopesRow(size, Nopes{static_cast<int>(size) - 1});
     return std::vector<std::vector<Nopes>>(size, nopesRow);
+}
+
+void Board::makeFields()
+{
+    mFields.reserve(skyscrapers.size());
+    for (auto &row : mFields) {
+        row.reserve(mFields.size());
+    }
+    for (std::size_t y = 0; y < skyscrapers.size(); ++y) {
+        mFields[y].reserve(skyscrapers.size());
+        for (std::size_t x = 0; x < skyscrapers[y].size(); ++x) {
+            mFields[y].emplace_back(Field{skyscrapers[y][x], nopes[y][x]});
+        }
+    }
+}
+
+void Board::makeRows()
+{
+    BorderIterator borderIterator{mFields.size()};
+
+    std::size_t size = mFields.size() * 2;
+    mRows.reserve(size);
+
+    for (std::size_t i = 0; i < size; ++i, ++borderIterator) {
+        mRows.emplace_back(Row{mFields, borderIterator.point(),
+                               borderIterator.readDirection()});
+    }
+}
+
+void Board::connnectRowsWithCrossingRows()
+{
+    std::size_t boardSize = mRows.size() / 2;
+
+    std::vector<int> targetRowsIdx(boardSize);
+    std::iota(targetRowsIdx.begin(), targetRowsIdx.end(), boardSize);
+
+    for (std::size_t i = 0; i < mRows.size(); ++i) {
+        if (i == mRows.size() / 2) {
+            std::iota(targetRowsIdx.begin(), targetRowsIdx.end(), 0);
+            std::reverse(targetRowsIdx.begin(), targetRowsIdx.end());
+        }
+
+        for (const auto &targetRowIdx : targetRowsIdx) {
+            mRows[i].addCrossingRows(&mRows[targetRowIdx]);
+        }
+    }
 }
 
 void debug_print(Board &board, const std::string &title)
@@ -58,4 +109,4 @@ void debug_print(Board &board, const std::string &title)
     std::cout << '\n';
 }
 
-} // namespace permutation
+} // namespace backtracking

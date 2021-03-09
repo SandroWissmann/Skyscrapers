@@ -57,6 +57,10 @@ add_executable(
     ../Skyscrapers/backtracking/nopes.cpp
     ../Skyscrapers/backtracking/board.cpp
     ../Skyscrapers/backtracking/cluehints.cpp
+    ../Skyscrapers/backtracking/field.cpp
+    ../Skyscrapers/backtracking/row.cpp
+    ../Skyscrapers/backtracking/readdirection.cpp
+    ../Skyscrapers/backtracking/borderiterator.cpp
 
                ${GTestFiles})
 add_test(NAME SkyscrapersTest COMMAND SkyscrapersTest)

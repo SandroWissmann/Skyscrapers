@@ -34,5 +34,14 @@ add_executable(Skyscrapers
     backtracking/board.cpp
     backtracking/cluehints.h
     backtracking/cluehints.cpp
+    backtracking/field.h
+    backtracking/field.cpp
+    backtracking/row.h
+    backtracking/row.cpp
+    backtracking/readdirection.h
+    backtracking/readdirection.cpp
+    backtracking/borderiterator.h
+    backtracking/borderiterator.cpp
+    backtracking/point.h
     main.cpp
     )
