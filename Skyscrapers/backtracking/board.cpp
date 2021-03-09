@@ -1,8 +1,10 @@
 #include "board.h"
 
 #include "borderiterator.h"
+#include "cluehints.h"
 
 #include <algorithm>
+#include <cassert>
 #include <iomanip>
 #include <iostream>
 
@@ -14,6 +16,20 @@ Board::Board(std::size_t size)
 {
     makeFields();
     makeRows();
+}
+
+void Board::insert(const std::vector<std::optional<ClueHints>> &clueHints)
+{
+    assert(clueHints.size() == mRows.size());
+
+    for (std::size_t i = 0; i < clueHints.size(); ++i) {
+        if (!clueHints[i]) {
+            continue;
+        }
+        mRows[i].addNopes(clueHints[i]->nopes, Row::Direction::front);
+        mRows[i].addSkyscrapers(clueHints[i]->skyscrapers,
+                                Row::Direction::front);
+    }
 }
 
 std::vector<std::vector<int>> Board::makeSkyscrapers(std::size_t size)
@@ -53,6 +69,7 @@ void Board::makeRows()
         mRows.emplace_back(Row{mFields, borderIterator.point(),
                                borderIterator.readDirection()});
     }
+    connnectRowsWithCrossingRows();
 }
 
 void Board::connnectRowsWithCrossingRows()

@@ -16,9 +16,11 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::size_t boardSize = clues.size() / 4;
 
-    auto rowsData = getClueHints(clues, boardSize);
+    auto clueHints = getClueHints(clues, boardSize);
 
     Board board{boardSize};
+
+    board.insert(clueHints);
 
     debug_print(board);
 

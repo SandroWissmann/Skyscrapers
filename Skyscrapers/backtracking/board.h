@@ -9,8 +9,13 @@
 #include <vector>
 
 namespace backtracking {
+
+class ClueHints;
+
 struct Board {
     Board(std::size_t size);
+
+    void insert(const std::vector<std::optional<ClueHints>> &clueHints);
 
     std::vector<std::vector<int>> skyscrapers{};
     std::vector<std::vector<Nopes>> nopes;

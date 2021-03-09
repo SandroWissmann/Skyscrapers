@@ -1,4 +1,4 @@
-#ifndef BACKTRACKING_ROW_H
+﻿#ifndef BACKTRACKING_ROW_H
 #define BACKTRACKING_ROW_H
 
 #include "readdirection.h"
