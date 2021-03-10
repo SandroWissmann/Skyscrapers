@@ -26,8 +26,8 @@ public:
     std::optional<int> lastMissingNope() const;
 
 private:
-    int *mSkyscraper;
-    Nopes *mNopes;
+    int &mSkyscraper;
+    Nopes &mNopes;
     bool mHasSkyscraper = false;
 };
 

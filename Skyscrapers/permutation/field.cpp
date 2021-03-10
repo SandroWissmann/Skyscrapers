@@ -7,48 +7,48 @@
 namespace permutation {
 
 Field::Field(int &skyscraper, Nopes &nopes)
-    : mSkyscraper{&skyscraper}, mNopes{&nopes}
+    : mSkyscraper{skyscraper}, mNopes{nopes}
 {
 }
 
 void Field::insertSkyscraper(int skyscraper)
 {
-    assert(*mSkyscraper == 0 || skyscraper == *mSkyscraper);
+    assert(mSkyscraper == 0 || skyscraper == mSkyscraper);
     if (mHasSkyscraper) {
         return;
     }
-    *mSkyscraper = skyscraper;
+    mSkyscraper = skyscraper;
     mHasSkyscraper = true;
 
-    mNopes->clear();
+    mNopes.clear();
 }
 void Field::insertNope(int nope)
 {
     if (mHasSkyscraper) {
         return;
     }
-    mNopes->insert(nope);
+    mNopes.insert(nope);
 }
 void Field::insertNopes(const std::vector<int> &nopes)
 {
     if (mHasSkyscraper) {
         return;
     }
-    mNopes->insert(nopes);
+    mNopes.insert(nopes);
 }
 
 bool Field::fullOfNopes() const
 {
-    return mNopes->sizeReached();
+    return mNopes.sizeReached();
 }
 
 int Field::skyscraper() const
 {
-    return *mSkyscraper;
+    return mSkyscraper;
 }
 Nopes Field::nopes() const
 {
-    return *mNopes;
+    return mNopes;
 }
 
 bool Field::hasSkyscraper() const
@@ -58,10 +58,10 @@ bool Field::hasSkyscraper() const
 
 std::optional<int> Field::lastMissingNope() const
 {
-    if (!mNopes->sizeReached()) {
+    if (!mNopes.sizeReached()) {
         return {};
     }
-    return mNopes->missingNumberInSequence();
+    return mNopes.missingNumberInSequence();
 }
 
 // not used

@@ -18,45 +18,18 @@ SolvePuzzle(const std::vector<int> &clues,
 {
     assert(clues.size() % 4 == 0);
 
-    auto cluePairs = makeCluePairs(clues);
+    std::size_t boardSize = clues.size() / 4;
 
-    int boardSize = clues.size() / 4;
     Board board{boardSize};
 
-    auto fields = makeFields(board.skyscrapers, board.nopes);
+    board.insert(startingGrid);
 
-    auto rows = makeRows(fields);
-
-    connectRowsWithCrossingRows(rows);
-
-    if (!startingGrid.empty()) {
-        insertExistingSkyscrapersFromStartingGrid(rows, startingGrid);
-    }
-
-    //    auto t1 = std::chrono::high_resolution_clock::now();
-
+    auto cluePairs = makeCluePairs(clues);
     Permutations permutations(boardSize, Span{&cluePairs[0], cluePairs.size()},
-                              Span{&rows[0], rows.size()});
+                              Span{&board.mRows[0], board.mRows.size()});
 
-    //    auto t2 = std::chrono::high_resolution_clock::now();
-    //    std::cout << "generate permutations:"
-    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t2
-    //              - t1)
-    //                     .count()
-    //              << '\n';
-
-    //    auto t3 = std::chrono::high_resolution_clock::now();
-
-    std::vector<Slice> slices = makeSlices(permutations, rows, cluePairs);
-
-    //    auto t4 = std::chrono::high_resolution_clock::now();
-    //    std::cout << "make slices:"
-    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t4
-    //              - t3)
-    //                     .count()
-    //              << '\n';
-
-    //    auto t5 = std::chrono::high_resolution_clock::now();
+    std::vector<Slice> slices =
+        makeSlices(permutations, board.mRows, cluePairs);
 
     for (;;) {
         bool allFull = true;
@@ -76,13 +49,6 @@ SolvePuzzle(const std::vector<int> &clues,
             break;
         }
     }
-
-    //    auto t6 = std::chrono::high_resolution_clock::now();
-    //    std::cout << "solving loop:"
-    //              << std::chrono::duration_cast<std::chrono::milliseconds>(t6
-    //              - t5)
-    //                     .count()
-    //              << '\n';
 
     return board.skyscrapers;
 }
