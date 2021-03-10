@@ -24,6 +24,10 @@ SolvePuzzle(const std::vector<int> &clues,
 
     board.insert(startingGrid);
 
+    if (board.isSolved()) {
+        return board.skyscrapers;
+    }
+
     auto cluePairs = makeCluePairs(clues);
     Permutations permutations(boardSize, Span{&cluePairs[0], cluePairs.size()},
                               Span{&board.mRows[0], board.mRows.size()});

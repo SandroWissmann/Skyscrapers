@@ -23,6 +23,10 @@ SolvePuzzle(const std::vector<int> &clues,
     board.insert(clueHints);
     board.insert(startingGrid);
 
+    if (board.isSolved()) {
+        return board.skyscrapers;
+    }
+
     // debug_print(board);
 
     return board.skyscrapers;

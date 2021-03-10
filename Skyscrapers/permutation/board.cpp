@@ -30,6 +30,17 @@ void Board::insert(const std::vector<std::vector<int>> &startingSkyscrapers)
     }
 }
 
+bool Board::isSolved() const
+{
+    std::size_t endVerticalRows = mRows.size() / 2;
+    for (std::size_t i = 0; i < endVerticalRows; ++i) {
+        if (!mRows[i].allFieldsContainSkyscraper()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::vector<std::vector<int>> Board::makeSkyscrapers(std::size_t size)
 {
     std::vector<int> skyscraperRow(size, 0);
