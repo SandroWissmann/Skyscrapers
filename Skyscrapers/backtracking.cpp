@@ -21,10 +21,11 @@ SolvePuzzle(const std::vector<int> &clues,
     Board board{boardSize};
 
     board.insert(clueHints);
+    board.insert(startingGrid);
 
-    debug_print(board);
+    // debug_print(board);
 
-    return {};
+    return board.skyscrapers;
 }
 
 std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)

@@ -32,6 +32,19 @@ void Board::insert(const std::vector<std::optional<ClueHints>> &clueHints)
     }
 }
 
+void Board::insert(const std::vector<std::vector<int>> &startingSkyscrapers)
+{
+    if (startingSkyscrapers.empty()) {
+        return;
+    }
+    std::size_t boardSize = mRows.size() / 2;
+    assert(startingSkyscrapers.size() == boardSize);
+    for (std::size_t i = 0; i < startingSkyscrapers.size(); ++i) {
+        mRows[i + boardSize].addSkyscrapers(startingSkyscrapers[i],
+                                            Row::Direction::back);
+    }
+}
+
 std::vector<std::vector<int>> Board::makeSkyscrapers(std::size_t size)
 {
     std::vector<int> skyscraperRow(size, 0);
