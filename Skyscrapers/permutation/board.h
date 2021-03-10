@@ -9,10 +9,17 @@
 #include <vector>
 
 namespace permutation {
+
+class ClueHints;
+
 struct Board {
     Board(std::size_t size);
 
+    void insert(const std::vector<std::optional<ClueHints>> &clueHints);
+
     void insert(const std::vector<std::vector<int>> &startingSkyscrapers);
+
+    bool isSolved() const;
 
     std::vector<std::vector<int>> skyscrapers{};
     std::vector<std::vector<Nopes>> nopes;

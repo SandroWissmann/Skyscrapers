@@ -53,6 +53,7 @@ add_executable(
     ../Skyscrapers/permutation/cluepair.cpp
     ../Skyscrapers/permutation/permutations.cpp
     ../Skyscrapers/permutation/slice.cpp
+    ../Skyscrapers/permutation/cluehints.cpp
     ../Skyscrapers/backtracking.cpp
     ../Skyscrapers/backtracking/nopes.cpp
     ../Skyscrapers/backtracking/board.cpp

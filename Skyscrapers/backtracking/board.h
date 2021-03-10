@@ -19,6 +19,8 @@ struct Board {
 
     void insert(const std::vector<std::vector<int>> &startingSkyscrapers);
 
+    bool isSolved() const;
+
     std::vector<std::vector<int>> skyscrapers{};
     std::vector<std::vector<Nopes>> nopes;
 

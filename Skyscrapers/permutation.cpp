@@ -1,8 +1,8 @@
 ﻿#include "permutation.h"
 
 #include "permutation/board.h"
+#include "permutation/cluehints.h"
 #include "permutation/cluepair.h"
-#include "permutation/field.h"
 #include "permutation/permutations.h"
 #include "permutation/row.h"
 #include "permutation/slice.h"
@@ -20,8 +20,11 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::size_t boardSize = clues.size() / 4;
 
+    auto clueHints = getClueHints(clues, boardSize);
+
     Board board{boardSize};
 
+    board.insert(clueHints);
     board.insert(startingGrid);
 
     if (board.isSolved()) {
