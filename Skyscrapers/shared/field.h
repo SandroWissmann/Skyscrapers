@@ -1,10 +1,8 @@
-#ifndef PERMUTATION_FIELD_H
-#define PERMUTATION_FIELD_H
+#ifndef FIELD_H
+#define FIELD_H
 
 #include <optional>
 #include <vector>
-
-namespace permutation {
 
 class Nopes;
 
@@ -34,7 +32,5 @@ private:
 std::vector<std::vector<Field>>
 makeFields(std::vector<std::vector<int>> &skyscrapers,
            std::vector<std::vector<Nopes>> &nopes);
-
-} // namespace permutation
 
 #endif

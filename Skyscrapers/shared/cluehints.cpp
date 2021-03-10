@@ -4,8 +4,6 @@
 #include <cassert>
 #include <unordered_set>
 
-namespace permutation {
-
 ClueHints::ClueHints()
 {
 }
@@ -164,5 +162,3 @@ std::optional<ClueHints> merge(std::optional<ClueHints> optFrontClueHints,
     clueHints.removeNopesOnSkyscrapers();
     return {clueHints};
 }
-
-} // namespace permutation

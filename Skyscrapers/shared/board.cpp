@@ -8,8 +8,6 @@
 #include <iomanip>
 #include <iostream>
 
-namespace backtracking {
-
 Board::Board(std::size_t size)
     : skyscrapers{makeSkyscrapers(size)}, nopes{makeNopes(size)},
       mFields{std::vector<std::vector<Field>>(skyscrapers.size())}
@@ -149,5 +147,3 @@ void debug_print(Board &board, const std::string &title)
     }
     std::cout << '\n';
 }
-
-} // namespace backtracking

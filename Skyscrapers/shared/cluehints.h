@@ -1,11 +1,10 @@
-#ifndef BACKTRACKING_CLUEHINTS_H
-#define BACKTRACKING_CLUEHINTS_H
+#ifndef CLUEHINTS_H
+#define CLUEHINTS_H
 
 #include <cstddef>
 #include <optional>
 #include <vector>
 
-namespace backtracking {
 struct ClueHints {
     ClueHints(std::size_t boardSize);
     ClueHints();
@@ -28,5 +27,4 @@ void mergeClueHintsPerRow(std::vector<std::optional<ClueHints>> &clueHints);
 std::optional<ClueHints> merge(std::optional<ClueHints> optFrontClueHints,
                                std::optional<ClueHints> optBackClueHints);
 
-} // namespace backtracking
 #endif

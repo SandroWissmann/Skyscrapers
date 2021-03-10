@@ -1,6 +1,5 @@
 #include "borderiterator.h"
 
-namespace backtracking {
 BorderIterator::BorderIterator(std::size_t boardSize) : mBoardSize{boardSize}
 {
 }
@@ -28,4 +27,3 @@ BorderIterator &BorderIterator::operator++()
     advanceToNextPosition(mPoint, mReadDirection, mIdx % mBoardSize);
     return *this;
 }
-} // namespace backtracking

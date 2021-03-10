@@ -1,12 +1,10 @@
-#ifndef BACKTRACKING_BORDERITERATOR_H
-#define BACKTRACKING_BORDERITERATOR_H
+#ifndef BORDERITERATOR_H
+#define BORDERITERATOR_H
 
 #include "point.h"
 #include "readdirection.h"
 
 #include <cstddef>
-
-namespace backtracking {
 
 class BorderIterator {
 public:
@@ -23,7 +21,5 @@ private:
     Point mPoint{0, 0};
     ReadDirection mReadDirection{ReadDirection::topToBottom};
 };
-
-} // namespace backtracking
 
 #endif

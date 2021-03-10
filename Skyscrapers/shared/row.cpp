@@ -9,8 +9,6 @@
 #include <cassert>
 #include <unordered_map>
 
-namespace backtracking {
-
 Row::Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
          const ReadDirection &readDirection)
     : mRowFields{getRowFields(readDirection, fields, startPoint)}
@@ -384,7 +382,6 @@ bool Row::hasSkyscraper(int skyscraper) const
     return false;
 }
 
-// not used
 std::vector<Row> makeRows(std::vector<std::vector<Field>> &fields)
 {
     BorderIterator borderIterator{fields.size()};
@@ -400,7 +397,6 @@ std::vector<Row> makeRows(std::vector<std::vector<Field>> &fields)
     return rows;
 }
 
-// not used
 void connectRowsWithCrossingRows(std::vector<Row> &rows)
 {
     std::size_t boardSize = rows.size() / 2;
@@ -436,5 +432,3 @@ void insertExistingSkyscrapersFromStartingGrid(
         }
     }
 }
-
-} // namespace backtracking

@@ -4,7 +4,6 @@
 
 #include <cassert>
 
-namespace backtracking {
 void nextDirection(ReadDirection &readDirection)
 {
     assert(readDirection != ReadDirection::rightToLeft);
@@ -28,4 +27,3 @@ void advanceToNextPosition(Point &point, ReadDirection readDirection,
         break;
     }
 }
-} // namespace backtracking

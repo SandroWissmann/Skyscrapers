@@ -2,8 +2,6 @@
 
 #include <cassert>
 
-namespace backtracking {
-
 Nopes::Nopes(int size) : mSize{size}
 {
     assert(size > 0);
@@ -28,7 +26,7 @@ bool Nopes::sizeReached() const
 int Nopes::missingNumberInSequence() const
 {
     assert(sizeReached());
-    return backtracking::missingNumberInSequence(mValues.begin(), mValues.end());
+    return ::missingNumberInSequence(mValues.begin(), mValues.end());
 }
 
 bool Nopes::contains(int value) const
@@ -71,4 +69,3 @@ std::unordered_set<int> Nopes::values() const
 {
     return mValues;
 }
-} // namespace permutation

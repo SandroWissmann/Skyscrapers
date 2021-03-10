@@ -1,11 +1,11 @@
 ﻿#include "permutation.h"
 
-#include "permutation/board.h"
-#include "permutation/cluehints.h"
 #include "permutation/cluepair.h"
 #include "permutation/permutations.h"
-#include "permutation/row.h"
 #include "permutation/slice.h"
+#include "shared/board.h"
+#include "shared/cluehints.h"
+#include "shared/row.h"
 
 #include <cassert>
 #include <chrono>

@@ -1,7 +1,5 @@
-#ifndef PERMUTATION_POINT_H
-#define PERMUTATION_POINT_H
-
-namespace permutation {
+#ifndef POINT_H
+#define POINT_H
 
 struct Point {
     int x;
@@ -16,7 +14,5 @@ inline bool operator!=(const Point &lhs, const Point &rhs)
 {
     return !(lhs == rhs);
 }
-
-} // namespace permutation
 
 #endif

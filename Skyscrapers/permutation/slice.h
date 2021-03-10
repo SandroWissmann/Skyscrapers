@@ -6,12 +6,13 @@
 #include <set>
 #include <vector>
 
+class Field;
+class Row;
+
 namespace permutation {
 
 class FieldElements;
 class Permutations;
-class Row;
-class Field;
 class CluePair;
 
 class Slice {

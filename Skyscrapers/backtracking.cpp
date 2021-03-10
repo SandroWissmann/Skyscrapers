@@ -1,8 +1,7 @@
 #include "backtracking.h"
 
-#include "backtracking/board.h"
-#include "backtracking/cluehints.h"
-#include "backtracking/nopes.h"
+#include "shared/board.h"
+#include "shared/cluehints.h"
 
 #include <cassert>
 

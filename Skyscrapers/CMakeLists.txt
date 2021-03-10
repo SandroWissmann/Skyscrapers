@@ -3,22 +3,24 @@ cmake_minimum_required(VERSION 3.5)
 project(Skyscrapers LANGUAGES CXX)
 
 add_executable(Skyscrapers
+    shared/nopes.h
+    shared/nopes.cpp
+    shared/field.h
+    shared/field.cpp
+    shared/point.h
+    shared/readdirection.h
+    shared/readdirection.cpp
+    shared/borderiterator.h
+    shared/borderiterator.cpp
+    shared/cluehints.h
+    shared/cluehints.cpp
+    shared/row.h
+    shared/row.cpp
+    shared/board.h
+    shared/board.cpp
     permutation.h
     permutation.cpp
-    permutation/nopes.h
-    permutation/nopes.cpp
     permutation/span.h
-    permutation/point.h
-    permutation/readdirection.h
-    permutation/readdirection.cpp
-    permutation/borderiterator.h
-    permutation/borderiterator.cpp
-    permutation/board.h
-    permutation/board.cpp
-    permutation/field.h
-    permutation/field.cpp
-    permutation/row.h
-    permutation/row.cpp
     permutation/cluepair.h
     permutation/cluepair.cpp
     permutation/permutations.h
@@ -26,24 +28,7 @@ add_executable(Skyscrapers
     permutation/fieldelements.h
     permutation/slice.h
     permutation/slice.cpp
-    permutation/cluehints.h
-    permutation/cluehints.cpp
     backtracking.h
     backtracking.cpp
-    backtracking/nopes.h
-    backtracking/nopes.cpp
-    backtracking/board.h
-    backtracking/board.cpp
-    backtracking/cluehints.h
-    backtracking/cluehints.cpp
-    backtracking/field.h
-    backtracking/field.cpp
-    backtracking/row.h
-    backtracking/row.cpp
-    backtracking/readdirection.h
-    backtracking/readdirection.cpp
-    backtracking/borderiterator.h
-    backtracking/borderiterator.cpp
-    backtracking/point.h
     main.cpp
     )

@@ -1,9 +1,9 @@
 #include "slice.h"
 
-#include "field.h"
+#include "../shared/field.h"
+#include "../shared/row.h"
 #include "fieldelements.h"
 #include "permutations.h"
-#include "row.h"
 
 namespace permutation {
 

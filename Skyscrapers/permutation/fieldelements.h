@@ -1,7 +1,7 @@
 #ifndef PERMUTATION_FIELDELEMENTS_H
 #define PERMUTATION_FIELDELEMENTS_H
 
-#include "nopes.h"
+#include "../shared/nopes.h"
 
 #include <vector>
 

@@ -1,11 +1,13 @@
 #ifndef PERMUTATION_PERMUTATIONS_H
 #define PERMUTATION_PERMUTATIONS_H
 
+#include "../shared/row.h"
 #include "cluepair.h"
-#include "row.h"
 #include "span.h"
 
 #include <vector>
+
+class Field;
 
 namespace permutation {
 

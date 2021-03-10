@@ -1,10 +1,8 @@
 #include "field.h"
 
-#include "nopes.h"
+#include "../shared/nopes.h"
 
 #include <cassert>
-
-namespace backtracking {
 
 Field::Field(int &skyscraper, Nopes &nopes)
     : mSkyscraper{skyscraper}, mNopes{nopes}
@@ -64,6 +62,7 @@ std::optional<int> Field::lastMissingNope() const
     return mNopes.missingNumberInSequence();
 }
 
+// not used
 std::vector<std::vector<Field>>
 makeFields(std::vector<std::vector<int>> &skyscrapers,
            std::vector<std::vector<Nopes>> &nopes)
@@ -80,5 +79,3 @@ makeFields(std::vector<std::vector<int>> &skyscrapers,
     }
     return fields;
 }
-
-} // namespace backtracking

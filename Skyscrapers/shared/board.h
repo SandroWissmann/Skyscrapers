@@ -1,5 +1,5 @@
-#ifndef BACKTRACKING_BOARD_H
-#define BACKTRACKING_BOARD_H
+#ifndef BOARD_H
+#define BOARD_H
 
 #include "field.h"
 #include "nopes.h"
@@ -7,8 +7,6 @@
 
 #include <string>
 #include <vector>
-
-namespace backtracking {
 
 class ClueHints;
 
@@ -24,6 +22,8 @@ struct Board {
     std::vector<std::vector<int>> skyscrapers{};
     std::vector<std::vector<Nopes>> nopes;
 
+    std::vector<Row> mRows;
+
 private:
     std::vector<std::vector<int>> makeSkyscrapers(std::size_t size);
     std::vector<std::vector<Nopes>> makeNopes(std::size_t size);
@@ -33,11 +33,8 @@ private:
     void connnectRowsWithCrossingRows();
 
     std::vector<std::vector<Field>> mFields;
-    std::vector<Row> mRows;
 };
 
 void debug_print(Board &board, const std::string &title = "");
-
-} // namespace backtracking
 
 #endif

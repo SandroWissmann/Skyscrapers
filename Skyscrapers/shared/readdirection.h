@@ -1,7 +1,5 @@
-#ifndef BACKTRACKING_READDIRECTION_H
-#define BACKTRACKING_READDIRECTION_H
-
-namespace backtracking {
+#ifndef READDIRECTION_H
+#define READDIRECTION_H
 
 struct Point;
 
@@ -11,6 +9,5 @@ void nextDirection(ReadDirection &readDirection);
 
 void advanceToNextPosition(Point &point, ReadDirection readDirection,
                            int clueIdx);
-} // namespace backtracking
 
 #endif

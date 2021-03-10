@@ -1,11 +1,9 @@
-#ifndef BACKTRACKING_NOPES_H
-#define BACKTRACKING_NOPES_H
+#ifndef NOPES_H
+#define NOPES_H
 
 #include <numeric>
 #include <unordered_set>
 #include <vector>
-
-namespace backtracking {
 
 template <typename It> int missingNumberInSequence(It begin, It end)
 {
@@ -39,6 +37,5 @@ private:
     int mSize;
     std::unordered_set<int> mValues;
 };
-} // namespace backtracking
 
 #endif

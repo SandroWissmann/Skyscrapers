@@ -1,6 +1,6 @@
 #include "permutations.h"
 
-#include "field.h"
+#include "../shared/field.h"
 
 #include <algorithm>
 #include <numeric>

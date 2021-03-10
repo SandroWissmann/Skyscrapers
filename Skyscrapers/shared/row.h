@@ -1,12 +1,10 @@
-#ifndef PERMUTATION_ROW_H
-#define PERMUTATION_ROW_H
+#ifndef ROW_H
+#define ROW_H
 
-#include "readdirection.h"
+#include "../shared/readdirection.h"
 
 #include <optional>
 #include <vector>
-
-namespace permutation {
 
 class Field;
 class Point;
@@ -98,7 +96,5 @@ void connectRowsWithCrossingRows(std::vector<Row> &rows);
 
 void insertExistingSkyscrapersFromStartingGrid(
     std::vector<Row> &rows, const std::vector<std::vector<int>> startingGrid);
-
-} // namespace permutation
 
 #endif
