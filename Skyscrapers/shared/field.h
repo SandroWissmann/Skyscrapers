@@ -29,8 +29,4 @@ private:
     bool mHasSkyscraper = false;
 };
 
-std::vector<std::vector<Field>>
-makeFields(std::vector<std::vector<int>> &skyscrapers,
-           std::vector<std::vector<Nopes>> &nopes);
-
 #endif

@@ -90,11 +90,4 @@ private:
     std::vector<Field *> mRowFields;
 };
 
-std::vector<Row> makeRows(std::vector<std::vector<Field>> &fields);
-
-void connectRowsWithCrossingRows(std::vector<Row> &rows);
-
-void insertExistingSkyscrapersFromStartingGrid(
-    std::vector<Row> &rows, const std::vector<std::vector<int>> startingGrid);
-
 #endif
