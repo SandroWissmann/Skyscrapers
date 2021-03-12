@@ -7,8 +7,37 @@
 
 namespace backtracking {
 
-bool isValid()
+bool rowsAreValid(const std::vector<std::vector<int>> &skyscrapers,
+                  std::size_t x, std::size_t y, std::size_t size)
 {
+    for (std::size_t xi = 0; xi < size; xi++) {
+        if (xi != x && skyscrapers[y][xi] == skyscrapers[y][x]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool columnsAreValid(const std::vector<std::vector<int>> &skyscrapers,
+                     std::size_t x, std::size_t y, std::size_t size)
+{
+    for (std::size_t yi = 0; yi < size; yi++) {
+        if (yi != y && skyscrapers[yi][x] == skyscrapers[y][x]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool boardIsValid(const Board &board, std::size_t x, std::size_t y,
+                  std::size_t size)
+{
+    if (!rowsAreValid(board.skyscrapers, x, y, size)) {
+        return false;
+    }
+    if (!columnsAreValid(board.skyscrapers, x, y, size)) {
+        return false;
+    }
     return true;
 }
 
@@ -22,9 +51,10 @@ bool insertNextSkyscraper(Board &board, std::size_t x, std::size_t y,
     if (y == size) {
         return true;
     }
-    if (board.skyscrapers[y][x] != 0) { // skyscraper present
-        // invalid step?
-        // -> return false
+    if (board.skyscrapers[y][x] != 0) {
+        if (!boardIsValid(board, x, y, size)) {
+            return false;
+        }
         return insertNextSkyscraper(board, x + 1, y, size);
     }
 
@@ -32,8 +62,9 @@ bool insertNextSkyscraper(Board &board, std::size_t x, std::size_t y,
          board.skyscrapers[y][x] <= static_cast<int>(board.skyscrapers.size());
          ++board.skyscrapers[y][x]) {
 
-        // if invalid continue;
-
+        if (!boardIsValid(board, x, y, size)) {
+            continue;
+        }
         if (insertNextSkyscraper(board, x + 1, y, size)) {
             return true;
         }
