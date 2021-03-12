@@ -3,7 +3,9 @@
 #include "shared/board.h"
 #include "shared/cluehints.h"
 
+#include <algorithm>
 #include <cassert>
+#include <iostream>
 
 namespace backtracking {
 
@@ -29,20 +31,128 @@ bool columnsAreValid(const std::vector<std::vector<int>> &skyscrapers,
     return true;
 }
 
-bool boardIsValid(const Board &board, std::size_t x, std::size_t y,
-                  std::size_t size)
+std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t y,
+                                 std::size_t size)
 {
-    if (!rowsAreValid(board.skyscrapers, x, y, size)) {
+    int frontClue = clues[clues.size() - 1 - y];
+    int backClue = clues[size + y];
+    return {frontClue, backClue};
+}
+
+std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
+                                    std::size_t x, std::size_t size)
+{
+    int frontClue = clues[x];
+    int backClue = clues[size * 3 - 1 - x];
+    return {frontClue, backClue};
+}
+
+template <typename Iterator> int visibleBuildings(Iterator begin, Iterator end)
+{
+    int visibleBuildingsCount = 0;
+    int highestSeen = 0;
+    for (auto it = begin; it != end; ++it) {
+        if (*it != 0 && *it > highestSeen) {
+            ++visibleBuildingsCount;
+            highestSeen = *it;
+        }
+    }
+    return visibleBuildingsCount;
+}
+
+bool rowCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
+                      const std::vector<int> &clues, std::size_t y,
+                      std::size_t size)
+{
+    auto [frontClue, backClue] = getRowClues(clues, y, size);
+
+    if (frontClue == 0 && backClue == 0) {
+        return true;
+    }
+
+    bool rowIsFull = std::find(skyscrapers[y].cbegin(), skyscrapers[y].cend(),
+                               0) == skyscrapers[y].cend();
+
+    if (frontClue != 0) {
+        auto frontVisible =
+            visibleBuildings(skyscrapers[y].cbegin(), skyscrapers[y].cend());
+
+        if (rowIsFull && frontClue != frontVisible) {
+            return false;
+        }
+    }
+    if (backClue != 0) {
+        auto backVisible =
+            visibleBuildings(skyscrapers[y].crbegin(), skyscrapers[y].crend());
+
+        if (rowIsFull && backClue != backVisible) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool columnCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
+                         const std::vector<int> &clues, std::size_t x,
+                         std::size_t size)
+{
+    auto [frontClue, backClue] = getColumnClues(clues, x, size);
+
+    if (frontClue == 0 && backClue == 0) {
+        return true;
+    }
+
+    std::vector<int> verticalSkyscrapers;
+    verticalSkyscrapers.reserve(size);
+
+    for (std::size_t yi = 0; yi < size; ++yi) {
+        verticalSkyscrapers.emplace_back(skyscrapers[yi][x]);
+    }
+
+    bool columnIsFull =
+        std::find(verticalSkyscrapers.cbegin(), verticalSkyscrapers.cend(),
+                  0) == verticalSkyscrapers.cend();
+
+    if (frontClue != 0) {
+        auto frontVisible = visibleBuildings(verticalSkyscrapers.cbegin(),
+                                             verticalSkyscrapers.cend());
+        if (columnIsFull && frontClue != frontVisible) {
+            return false;
+        }
+    }
+    if (backClue != 0) {
+        auto backVisible = visibleBuildings(verticalSkyscrapers.crbegin(),
+                                            verticalSkyscrapers.crend());
+
+        if (columnIsFull && backClue != backVisible) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool skyscrapersAreValidPositioned(
+    const std::vector<std::vector<int>> &skyscrapers,
+    const std::vector<int> &clues, std::size_t x, std::size_t y,
+    std::size_t size)
+{
+    if (!rowsAreValid(skyscrapers, x, y, size)) {
         return false;
     }
-    if (!columnsAreValid(board.skyscrapers, x, y, size)) {
+    if (!columnsAreValid(skyscrapers, x, y, size)) {
+        return false;
+    }
+    if (!rowCluesAreValid(skyscrapers, clues, y, size)) {
+        return false;
+    }
+    if (!columnCluesAreValid(skyscrapers, clues, x, size)) {
         return false;
     }
     return true;
 }
 
-bool insertNextSkyscraper(Board &board, std::size_t x, std::size_t y,
-                          std::size_t size)
+bool insertNextSkyscraper(Board &board, const std::vector<int> &clues,
+                          std::size_t x, std::size_t y, std::size_t size)
 {
     if (x == size) {
         x = 0;
@@ -52,20 +162,22 @@ bool insertNextSkyscraper(Board &board, std::size_t x, std::size_t y,
         return true;
     }
     if (board.skyscrapers[y][x] != 0) {
-        if (!boardIsValid(board, x, y, size)) {
+        if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, x, y,
+                                           size)) {
             return false;
         }
-        return insertNextSkyscraper(board, x + 1, y, size);
+        return insertNextSkyscraper(board, clues, x + 1, y, size);
     }
 
     for (board.skyscrapers[y][x] = 1;
          board.skyscrapers[y][x] <= static_cast<int>(board.skyscrapers.size());
          ++board.skyscrapers[y][x]) {
 
-        if (!boardIsValid(board, x, y, size)) {
+        if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, x, y,
+                                           size)) {
             continue;
         }
-        if (insertNextSkyscraper(board, x + 1, y, size)) {
+        if (insertNextSkyscraper(board, clues, x + 1, y, size)) {
             return true;
         }
     }
@@ -94,7 +206,7 @@ SolvePuzzle(const std::vector<int> &clues,
 
     debug_print(board);
 
-    insertNextSkyscraper(board, 0, 0, board.skyscrapers.size());
+    insertNextSkyscraper(board, clues, 0, 0, board.skyscrapers.size());
 
     debug_print(board);
 
