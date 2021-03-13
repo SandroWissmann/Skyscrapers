@@ -6,8 +6,11 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <unordered_set>
 
 namespace backtracking {
+
+int count = 0;
 
 bool rowsAreValid(const std::vector<std::vector<int>> &skyscrapers,
                   std::size_t x, std::size_t y, std::size_t size)
@@ -159,9 +162,17 @@ bool skyscrapersAreValidPositioned(
     return true;
 }
 
-bool insertNextSkyscraper(Board &board, const std::vector<int> &clues,
-                          std::size_t x, std::size_t y, std::size_t size)
+bool insertNextSkyscraper(Board &board,
+                          std::vector<std::unordered_set<int>> &rowsValues,
+                          const std::vector<int> &clues, std::size_t x,
+                          std::size_t y, std::size_t size)
 {
+    ++count;
+    if (count == 18 || count == 13) {
+        std::cout << "count\t:" << count << '\n';
+        debug_print(board);
+    }
+
     if (x == size) {
         x = 0;
         y++;
@@ -174,25 +185,44 @@ bool insertNextSkyscraper(Board &board, const std::vector<int> &clues,
                                            size)) {
             return false;
         }
-        return insertNextSkyscraper(board, clues, x + 1, y, size);
+        rowsValues[y].insert(board.skyscrapers[y][x]);
+        if (insertNextSkyscraper(board, rowsValues, clues, x + 1, y, size)) {
+            return true;
+        }
+        else {
+            rowsValues[y].erase(board.skyscrapers[y][x]);
+            return false;
+        }
     }
 
-    for (board.skyscrapers[y][x] = 1;
-         board.skyscrapers[y][x] <= static_cast<int>(board.skyscrapers.size());
-         ++board.skyscrapers[y][x]) {
+    for (int trySkyscraper = 1;
+         trySkyscraper <= static_cast<int>(board.skyscrapers.size());
+         ++trySkyscraper) {
 
-        if (board.nopes[y][x].contains(board.skyscrapers[y][x])) {
+        if (rowsValues[y].find(trySkyscraper) != rowsValues[y].end()) {
             continue;
         }
+
+        if (board.nopes[y][x].contains(trySkyscraper)) {
+            continue;
+        }
+
+        board.skyscrapers[y][x] = trySkyscraper;
+        rowsValues[y].insert(trySkyscraper);
 
         if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, x, y,
                                            size)) {
             continue;
         }
-        if (insertNextSkyscraper(board, clues, x + 1, y, size)) {
+
+        if (insertNextSkyscraper(board, rowsValues, clues, x + 1, y, size)) {
             return true;
         }
+        else {
+            rowsValues[y].erase(board.skyscrapers[y][x]);
+        }
     }
+    rowsValues[y].erase(board.skyscrapers[y][x]);
     board.skyscrapers[y][x] = 0;
     return false;
 }
@@ -218,7 +248,11 @@ SolvePuzzle(const std::vector<int> &clues,
 
     // debug_print(board);
 
-    insertNextSkyscraper(board, clues, 0, 0, board.skyscrapers.size());
+    std::vector<std::unordered_set<int>> rowsValues(board.skyscrapers.size(),
+                                                    std::unordered_set<int>{});
+
+    insertNextSkyscraper(board, rowsValues, clues, 0, 0,
+                         board.skyscrapers.size());
 
     // debug_print(board);
 
