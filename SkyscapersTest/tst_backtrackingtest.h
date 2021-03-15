@@ -231,4 +231,20 @@ TEST(Backtracking, sky11_easy_partial)
               sky11_easy_partial.result);
 }
 
+TEST(Backtracking, sky11_medium_partial)
+{
+    EXPECT_EQ(backtracking::SolvePuzzle(sky11_medium_partial.clues,
+                                        sky11_medium_partial.board,
+                                        sky11_medium_partial.board.size()),
+              sky11_medium_partial.result);
+}
+
+TEST(Backtracking, sky11_medium_partial_2)
+{
+    EXPECT_EQ(backtracking::SolvePuzzle(sky11_medium_partial_2.clues,
+                                        sky11_medium_partial_2.board,
+                                        sky11_medium_partial_2.board.size()),
+              sky11_medium_partial_2.result);
+}
+
 #endif // TST_BACKTRACKINGTEST_H

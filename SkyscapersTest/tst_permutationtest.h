@@ -231,4 +231,20 @@ TEST(Permutation, sky11_easy_partial)
               sky11_easy_partial.result);
 }
 
+TEST(Permutation, sky11_medium_partial)
+{
+    EXPECT_EQ(permutation::SolvePuzzle(sky11_medium_partial.clues,
+                                       sky11_medium_partial.board,
+                                       sky11_medium_partial.board.size()),
+              sky11_medium_partial.result);
+}
+
+TEST(Permutation, sky11_medium_partial_2)
+{
+    EXPECT_EQ(permutation::SolvePuzzle(sky11_medium_partial_2.clues,
+                                       sky11_medium_partial_2.board,
+                                       sky11_medium_partial_2.board.size()),
+              sky11_medium_partial_2.result);
+}
+
 #endif // TST_PERMUTATIONTEST_H
