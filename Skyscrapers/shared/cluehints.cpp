@@ -4,10 +4,6 @@
 #include <cassert>
 #include <unordered_set>
 
-ClueHints::ClueHints()
-{
-}
-
 ClueHints::ClueHints(std::size_t boardSize)
     : skyscrapers{std::vector<int>(boardSize, 0)},
       nopes{std::vector<std::vector<int>>(boardSize, std::vector<int>{})}

@@ -7,7 +7,7 @@
 
 struct ClueHints {
     ClueHints(std::size_t boardSize);
-    ClueHints();
+    ClueHints() = default;
 
     void reverse();
 
