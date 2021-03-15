@@ -30,5 +30,7 @@ add_executable(Skyscrapers
     permutation/slice.cpp
     backtracking.h
     backtracking.cpp
+    backtracking/algorithm.h
+    backtracking/algorithm.cpp
     main.cpp
     )

@@ -55,6 +55,7 @@ add_executable(
     ../Skyscrapers/permutation/permutations.cpp
     ../Skyscrapers/permutation/slice.cpp
     ../Skyscrapers/backtracking.cpp
+    ../Skyscrapers/backtracking/algorithm.cpp
 
                ${GTestFiles})
 add_test(NAME SkyscrapersTest COMMAND SkyscrapersTest)
