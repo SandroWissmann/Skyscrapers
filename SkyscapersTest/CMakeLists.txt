@@ -42,6 +42,8 @@ add_executable(
     testdataprovider.h
     tst_permutationtest.h
     tst_backtrackingtest.h
+    tst_codewarspermutationtest.h
+    tst_codewarsbacktrackingtest.h
     main.cpp
     ../Skyscrapers/shared/nopes.cpp
     ../Skyscrapers/shared/field.cpp
@@ -56,6 +58,8 @@ add_executable(
     ../Skyscrapers/permutation/slice.cpp
     ../Skyscrapers/backtracking.cpp
     ../Skyscrapers/backtracking/algorithm.cpp
+    ../Skyscrapers/codewarsbacktracking.cpp
+    ../Skyscrapers/codewarspermutation.cpp
 
                ${GTestFiles})
 add_test(NAME SkyscrapersTest COMMAND SkyscrapersTest)

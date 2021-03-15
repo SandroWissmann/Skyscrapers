@@ -1,4 +1,6 @@
 #include "tst_backtrackingtest.h"
+#include "tst_codewarsbacktrackingtest.h"
+#include "tst_codewarspermutationtest.h"
 #include "tst_permutationtest.h"
 
 #include <gtest/gtest.h>

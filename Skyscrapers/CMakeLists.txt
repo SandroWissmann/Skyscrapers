@@ -32,5 +32,9 @@ add_executable(Skyscrapers
     backtracking.cpp
     backtracking/algorithm.h
     backtracking/algorithm.cpp
+    codewarsbacktracking.h
+    codewarsbacktracking.cpp
+    codewarspermutation.h
+    codewarspermutation.cpp
     main.cpp
     )
