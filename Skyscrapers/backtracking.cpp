@@ -162,16 +162,10 @@ bool skyscrapersAreValidPositioned(
     return true;
 }
 
-bool insertNextSkyscraper(Board &board,
-                          std::vector<std::unordered_set<int>> &rowsValues,
-                          const std::vector<int> &clues, std::size_t x,
-                          std::size_t y, std::size_t size)
+bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
+                      std::size_t x, std::size_t y, std::size_t size)
 {
     ++count;
-    if (count == 18 || count == 13) {
-        std::cout << "count\t:" << count << '\n';
-        debug_print(board);
-    }
 
     if (x == size) {
         x = 0;
@@ -185,12 +179,10 @@ bool insertNextSkyscraper(Board &board,
                                            size)) {
             return false;
         }
-        rowsValues[y].insert(board.skyscrapers[y][x]);
-        if (insertNextSkyscraper(board, rowsValues, clues, x + 1, y, size)) {
+        if (guessSkyscrapers(board, clues, x + 1, y, size)) {
             return true;
         }
         else {
-            rowsValues[y].erase(board.skyscrapers[y][x]);
             return false;
         }
     }
@@ -199,30 +191,21 @@ bool insertNextSkyscraper(Board &board,
          trySkyscraper <= static_cast<int>(board.skyscrapers.size());
          ++trySkyscraper) {
 
-        if (rowsValues[y].find(trySkyscraper) != rowsValues[y].end()) {
-            continue;
-        }
-
         if (board.nopes[y][x].contains(trySkyscraper)) {
             continue;
         }
 
         board.skyscrapers[y][x] = trySkyscraper;
-        rowsValues[y].insert(trySkyscraper);
 
         if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, x, y,
                                            size)) {
             continue;
         }
 
-        if (insertNextSkyscraper(board, rowsValues, clues, x + 1, y, size)) {
+        if (guessSkyscrapers(board, clues, x + 1, y, size)) {
             return true;
         }
-        else {
-            rowsValues[y].erase(board.skyscrapers[y][x]);
-        }
     }
-    rowsValues[y].erase(board.skyscrapers[y][x]);
     board.skyscrapers[y][x] = 0;
     return false;
 }
@@ -246,16 +229,8 @@ SolvePuzzle(const std::vector<int> &clues,
         return board.skyscrapers;
     }
 
-    // debug_print(board);
-
-    std::vector<std::unordered_set<int>> rowsValues(board.skyscrapers.size(),
-                                                    std::unordered_set<int>{});
-
-    insertNextSkyscraper(board, rowsValues, clues, 0, 0,
-                         board.skyscrapers.size());
-
-    // debug_print(board);
-
+    guessSkyscrapers(board /*, rowsValues*/, clues, 0, 0,
+                     board.skyscrapers.size());
     return board.skyscrapers;
 }
 
