@@ -11,7 +11,7 @@ class Point;
 
 class Row {
 public:
-    Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
+    Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
         const ReadDirection &readDirection);
 
     void insertSkyscraper(int pos, int skyscraper);
@@ -76,7 +76,8 @@ private:
     int getIdx(std::vector<Field *>::const_reverse_iterator crit) const;
 
     std::vector<Field *> getRowFields(const ReadDirection &readDirection,
-                                      std::vector<std::vector<Field>> &fields,
+                                      std::vector<Field> &boardFields,
+                                      std::size_t size,
                                       const Point &startPoint);
 
     bool onlyOneFieldWithoutNope(int nope) const;

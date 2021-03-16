@@ -19,20 +19,22 @@ struct Board {
 
     bool isSolved() const;
 
-    std::vector<std::vector<int>> skyscrapers{};
-    std::vector<std::vector<Nopes>> nopes;
+    std::vector<int> skyscrapers{};
+    std::vector<Nopes> nopes;
 
     std::vector<Row> mRows;
 
-private:
-    std::vector<std::vector<int>> makeSkyscrapers(std::size_t size);
-    std::vector<std::vector<Nopes>> makeNopes(std::size_t size);
+    std::vector<std::vector<int>> skyscrapers2d() const;
 
+    std::size_t size() const;
+
+private:
     void makeFields();
     void makeRows();
     void connnectRowsWithCrossingRows();
 
-    std::vector<std::vector<Field>> mFields;
+    std::size_t mSize;
+    std::vector<Field> mFields;
 };
 
 void debug_print(Board &board, const std::string &title = "");

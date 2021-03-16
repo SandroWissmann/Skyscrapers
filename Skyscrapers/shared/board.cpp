@@ -9,8 +9,9 @@
 #include <iostream>
 
 Board::Board(std::size_t size)
-    : skyscrapers{makeSkyscrapers(size)}, nopes{makeNopes(size)},
-      mFields{std::vector<std::vector<Field>>(skyscrapers.size())}
+    : skyscrapers{std::vector<int>(size * size, 0)},
+      nopes{std::vector<Nopes>(size * size, Nopes{static_cast<int>(size) - 1})},
+      mSize{size}
 {
     makeFields();
     makeRows();
@@ -37,6 +38,7 @@ void Board::insert(const std::vector<std::vector<int>> &startingSkyscrapers)
     }
     std::size_t boardSize = mRows.size() / 2;
     assert(startingSkyscrapers.size() == boardSize);
+
     for (std::size_t i = 0; i < startingSkyscrapers.size(); ++i) {
         mRows[i + boardSize].addSkyscrapers(startingSkyscrapers[i],
                                             Row::Direction::back);
@@ -54,41 +56,40 @@ bool Board::isSolved() const
     return true;
 }
 
-std::vector<std::vector<int>> Board::makeSkyscrapers(std::size_t size)
+std::vector<std::vector<int>> Board::skyscrapers2d() const
 {
-    std::vector<int> skyscraperRow(size, 0);
-    return std::vector<std::vector<int>>(size, skyscraperRow);
+    std::vector<std::vector<int>> skyscrapers2d(mSize, std::vector<int>());
+
+    for (std::size_t i = 0; i < skyscrapers2d.size(); ++i) {
+        std::copy(skyscrapers.begin() + mSize * i,
+                  skyscrapers.begin() + (mSize * (i + 1)),
+                  std::back_inserter(skyscrapers2d[i]));
+    }
+    return skyscrapers2d;
 }
 
-std::vector<std::vector<Nopes>> Board::makeNopes(std::size_t size)
+std::size_t Board::size() const
 {
-    std::vector<Nopes> nopesRow(size, Nopes{static_cast<int>(size) - 1});
-    return std::vector<std::vector<Nopes>>(size, nopesRow);
+    return mSize;
 }
 
 void Board::makeFields()
 {
     mFields.reserve(skyscrapers.size());
-    for (auto &row : mFields) {
-        row.reserve(mFields.size());
-    }
-    for (std::size_t y = 0; y < skyscrapers.size(); ++y) {
-        mFields[y].reserve(skyscrapers.size());
-        for (std::size_t x = 0; x < skyscrapers[y].size(); ++x) {
-            mFields[y].emplace_back(Field{skyscrapers[y][x], nopes[y][x]});
-        }
+    for (std::size_t i = 0; i < skyscrapers.size(); ++i) {
+        mFields.emplace_back(Field{skyscrapers[i], nopes[i]});
     }
 }
 
 void Board::makeRows()
 {
-    BorderIterator borderIterator{mFields.size()};
+    BorderIterator borderIterator{mSize};
 
-    std::size_t size = mFields.size() * 2;
-    mRows.reserve(size);
+    std::size_t rowSize = mSize * 2;
+    mRows.reserve(rowSize);
 
-    for (std::size_t i = 0; i < size; ++i, ++borderIterator) {
-        mRows.emplace_back(Row{mFields, borderIterator.point(),
+    for (std::size_t i = 0; i < rowSize; ++i, ++borderIterator) {
+        mRows.emplace_back(Row{mFields, mSize, borderIterator.point(),
                                borderIterator.readDirection()});
     }
     connnectRowsWithCrossingRows();
@@ -116,34 +117,35 @@ void Board::connnectRowsWithCrossingRows()
 void debug_print(Board &board, const std::string &title)
 {
     std::cout << title << '\n';
-    for (std::size_t y = 0; y < board.skyscrapers.size(); ++y) {
-        for (std::size_t x = 0; x < board.skyscrapers[y].size(); ++x) {
 
-            if (board.skyscrapers[y][x] != 0) {
-                std::cout << std::setw(board.skyscrapers.size() * 2);
-                std::cout << "V" + std::to_string(board.skyscrapers[y][x]);
-            }
-            else if (board.skyscrapers[y][x] == 0 &&
-                     !board.nopes[y][x].isEmpty()) {
-                auto nopes_set = board.nopes[y][x].values();
-                std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
-                std::sort(nopes.begin(), nopes.end());
+    for (std::size_t i = 0; i < board.skyscrapers.size(); ++i) {
 
-                std::string nopesStr;
-                for (std::size_t i = 0; i < nopes.size(); ++i) {
-                    nopesStr.append(std::to_string(nopes[i]));
-                    if (i != nopes.size() - 1) {
-                        nopesStr.push_back(',');
-                    }
-                }
-                std::cout << std::setw(board.skyscrapers.size() * 2);
-                std::cout << nopesStr;
-            }
-            else {
-                std::cout << ' ';
-            }
+        if (i % board.size() == 0 && i != 0) {
+            std::cout << '\n';
         }
-        std::cout << '\n';
+
+        if (board.skyscrapers[i] != 0) {
+            std::cout << std::setw(board.size() * 2);
+            std::cout << "V" + std::to_string(board.skyscrapers[i]);
+        }
+        else if (board.skyscrapers[i] == 0 && !board.nopes[i].isEmpty()) {
+            auto nopes_set = board.nopes[i].values();
+            std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
+            std::sort(nopes.begin(), nopes.end());
+
+            std::string nopesStr;
+            for (std::size_t i = 0; i < nopes.size(); ++i) {
+                nopesStr.append(std::to_string(nopes[i]));
+                if (i != nopes.size() - 1) {
+                    nopesStr.push_back(',');
+                }
+            }
+            std::cout << std::setw(board.size() * 2);
+            std::cout << nopesStr;
+        }
+        else {
+            std::cout << ' ';
+        }
     }
     std::cout << '\n';
 }

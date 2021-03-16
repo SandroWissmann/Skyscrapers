@@ -9,9 +9,9 @@
 #include <cassert>
 #include <unordered_map>
 
-Row::Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
+Row::Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
          const ReadDirection &readDirection)
-    : mRowFields{getRowFields(readDirection, fields, startPoint)}
+    : mRowFields{getRowFields(readDirection, fields, size, startPoint)}
 {
 }
 
@@ -300,22 +300,25 @@ int Row::getIdx(std::vector<Field *>::const_reverse_iterator crit) const
     return size() - std::distance(mRowFields.crbegin(), crit) - 1;
 }
 
-std::vector<Field *>
-Row::getRowFields(const ReadDirection &readDirection,
-                  std::vector<std::vector<Field>> &boardFields,
-                  const Point &startPoint)
+std::vector<Field *> Row::getRowFields(const ReadDirection &readDirection,
+                                       std::vector<Field> &boardFields,
+                                       std::size_t size,
+                                       const Point &startPoint)
 {
     std::vector<Field *> fields;
-    fields.reserve(boardFields.size());
+    fields.reserve(size);
     std::size_t x = startPoint.x;
     std::size_t y = startPoint.y;
-    for (std::size_t i = 0; i < boardFields.size(); ++i) {
-        fields.emplace_back(&boardFields[y][x]);
 
-        if (readDirection == ReadDirection::topToBottom) {
+    if (readDirection == ReadDirection::topToBottom) {
+        for (std::size_t i = 0; i < size; ++i) {
+            fields.emplace_back(&boardFields[x + y * size]);
             ++y;
         }
-        else {
+    }
+    else { // ReadDirection::rightToLeft
+        for (std::size_t i = 0; i < size; ++i) {
+            fields.emplace_back(&boardFields[x + y * size]);
             --x;
         }
     }

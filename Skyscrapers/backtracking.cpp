@@ -26,12 +26,14 @@ SolvePuzzle(const std::vector<int> &clues,
     board.insert(clueHints);
     board.insert(startingGrid);
 
+    debug_print(board);
+
     if (board.isSolved()) {
-        return board.skyscrapers;
+        return board.skyscrapers2d();
     }
 
-    guessSkyscrapers(board, clues, 0, 0, board.skyscrapers.size());
-    return board.skyscrapers;
+    guessSkyscrapers(board, clues, 0, board.skyscrapers.size(), board.size());
+    return board.skyscrapers2d();
 }
 
 std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)

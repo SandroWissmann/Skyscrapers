@@ -28,7 +28,7 @@ SolvePuzzle(const std::vector<int> &clues,
     board.insert(startingGrid);
 
     if (board.isSolved()) {
-        return board.skyscrapers;
+        return board.skyscrapers2d();
     }
 
     auto cluePairs = makeCluePairs(clues);
@@ -57,7 +57,7 @@ SolvePuzzle(const std::vector<int> &clues,
         }
     }
 
-    return board.skyscrapers;
+    return board.skyscrapers2d();
 }
 
 std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)

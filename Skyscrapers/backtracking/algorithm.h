@@ -8,32 +8,32 @@ class Board;
 namespace backtracking {
 
 bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
-                      std::size_t x, std::size_t y, std::size_t size);
+                      std::size_t index, std::size_t countOfElements,
+                      std::size_t rowSize);
 
-bool skyscrapersAreValidPositioned(
-    const std::vector<std::vector<int>> &skyscrapers,
-    const std::vector<int> &clues, std::size_t x, std::size_t y,
-    std::size_t size);
+bool skyscrapersAreValidPositioned(const std::vector<int> &skyscrapers,
+                                   const std::vector<int> &clues,
+                                   std::size_t index, std::size_t rowSize);
 
-bool rowsAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                  std::size_t x, std::size_t y, std::size_t size);
+bool rowsAreValid(const std::vector<int> &skyscrapers, std::size_t index,
+                  std::size_t rowSize);
 
-bool columnsAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                     std::size_t x, std::size_t y, std::size_t size);
+bool columnsAreValid(const std::vector<int> &skyscrapers, std::size_t index,
+                     std::size_t rowSize);
 
-bool rowCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                      const std::vector<int> &clues, std::size_t y,
-                      std::size_t size);
+bool rowCluesAreValid(const std::vector<int> &skyscrapers,
+                      const std::vector<int> &clues, std::size_t index,
+                      std::size_t rowSize);
 
-std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t y,
-                                 std::size_t size);
+std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t row,
+                                 std::size_t rowSize);
 
-bool columnCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                         const std::vector<int> &clues, std::size_t x,
-                         std::size_t size);
+bool columnCluesAreValid(const std::vector<int> &skyscrapers,
+                         const std::vector<int> &clues, std::size_t index,
+                         std::size_t rowSize);
 
 std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
-                                    std::size_t x, std::size_t size);
+                                    std::size_t column, std::size_t rowSize);
 
 template <typename Iterator> int visibleBuildings(Iterator begin, Iterator end)
 {
