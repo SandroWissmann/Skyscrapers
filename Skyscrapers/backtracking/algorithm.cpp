@@ -12,8 +12,8 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
     if (index == countOfElements) {
         return true;
     }
-    if (board.skyscrapers[index] != 0) {
-        if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, index,
+    if (board.fields[index].skyscraper() != 0) {
+        if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             return false;
         }
@@ -27,11 +27,11 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
     for (int trySkyscraper = 1; trySkyscraper <= static_cast<int>(rowSize);
          ++trySkyscraper) {
 
-        if (board.nopes[index].contains(trySkyscraper)) {
+        if (board.fields[index].nopes().contains(trySkyscraper)) {
             continue;
         }
-        board.skyscrapers[index] = trySkyscraper;
-        if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, index,
+        board.fields[index].insertSkyscraper(trySkyscraper);
+        if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             continue;
         }
@@ -40,30 +40,30 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
             return true;
         }
     }
-    board.skyscrapers[index] = 0;
+    board.fields[index].insertSkyscraper(0);
     return false;
 }
 
-bool skyscrapersAreValidPositioned(const std::vector<int> &skyscrapers,
+bool skyscrapersAreValidPositioned(const std::vector<Field> &fields,
                                    const std::vector<int> &clues,
                                    std::size_t index, std::size_t rowSize)
 {
-    if (!rowsAreValid(skyscrapers, index, rowSize)) {
+    if (!rowsAreValid(fields, index, rowSize)) {
         return false;
     }
-    if (!columnsAreValid(skyscrapers, index, rowSize)) {
+    if (!columnsAreValid(fields, index, rowSize)) {
         return false;
     }
-    if (!rowCluesAreValid(skyscrapers, clues, index, rowSize)) {
+    if (!rowCluesAreValid(fields, clues, index, rowSize)) {
         return false;
     }
-    if (!columnCluesAreValid(skyscrapers, clues, index, rowSize)) {
+    if (!columnCluesAreValid(fields, clues, index, rowSize)) {
         return false;
     }
     return true;
 }
 
-bool rowsAreValid(const std::vector<int> &skyscrapers, std::size_t index,
+bool rowsAreValid(const std::vector<Field> &fields, std::size_t index,
                   std::size_t rowSize)
 {
     std::size_t row = index / rowSize;
@@ -72,14 +72,14 @@ bool rowsAreValid(const std::vector<int> &skyscrapers, std::size_t index,
         if (currIndex == index) {
             continue;
         }
-        if (skyscrapers[currIndex] == skyscrapers[index]) {
+        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
             return false;
         }
     }
     return true;
 }
 
-bool columnsAreValid(const std::vector<int> &skyscrapers, std::size_t index,
+bool columnsAreValid(const std::vector<Field> &fields, std::size_t index,
                      std::size_t rowSize)
 {
     std::size_t column = index % rowSize;
@@ -89,14 +89,14 @@ bool columnsAreValid(const std::vector<int> &skyscrapers, std::size_t index,
         if (currIndex == index) {
             continue;
         }
-        if (skyscrapers[currIndex] == skyscrapers[index]) {
+        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
             return false;
         }
     }
     return true;
 }
 
-bool rowCluesAreValid(const std::vector<int> &skyscrapers,
+bool rowCluesAreValid(const std::vector<Field> &fields,
                       const std::vector<int> &clues, std::size_t index,
                       std::size_t rowSize)
 {
@@ -111,10 +111,12 @@ bool rowCluesAreValid(const std::vector<int> &skyscrapers,
     std::size_t rowIndexBegin = row * rowSize;
     std::size_t rowIndexEnd = (row + 1) * rowSize;
 
-    auto citBegin = skyscrapers.cbegin() + rowIndexBegin;
-    auto citEnd = skyscrapers.cbegin() + rowIndexEnd;
+    auto citBegin = fields.cbegin() + rowIndexBegin;
+    auto citEnd = fields.cbegin() + rowIndexEnd;
 
-    bool rowIsFull = std::find(citBegin, citEnd, 0) == citEnd;
+    bool rowIsFull = std::find_if(citBegin, citEnd, [](const Field &field) {
+                         return !field.hasSkyscraper();
+                     }) == citEnd;
 
     if (!rowIsFull) {
         return true;
@@ -149,7 +151,7 @@ std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t row,
     return {frontClue, backClue};
 }
 
-bool columnCluesAreValid(const std::vector<int> &skyscrapers,
+bool columnCluesAreValid(const std::vector<Field> &fields,
                          const std::vector<int> &clues, std::size_t index,
                          std::size_t rowSize)
 {
@@ -161,31 +163,33 @@ bool columnCluesAreValid(const std::vector<int> &skyscrapers,
         return true;
     }
 
-    std::vector<int> verticalSkyscrapers;
-    verticalSkyscrapers.reserve(rowSize);
+    std::vector<Field> verticalFields;
+    verticalFields.reserve(rowSize);
 
     for (std::size_t i = 0; i < rowSize; ++i) {
-        verticalSkyscrapers.emplace_back(skyscrapers[column + i * rowSize]);
+        verticalFields.emplace_back(fields[column + i * rowSize]);
     }
 
     bool columnIsFull =
-        std::find(verticalSkyscrapers.cbegin(), verticalSkyscrapers.cend(),
-                  0) == verticalSkyscrapers.cend();
+        std::find_if(verticalFields.cbegin(), verticalFields.cend(),
+                     [](const Field &field) {
+                         return !field.hasSkyscraper();
+                     }) == verticalFields.cend();
 
     if (!columnIsFull) {
         return true;
     }
 
     if (frontClue != 0) {
-        auto frontVisible = visibleBuildings(verticalSkyscrapers.cbegin(),
-                                             verticalSkyscrapers.cend());
+        auto frontVisible =
+            visibleBuildings(verticalFields.cbegin(), verticalFields.cend());
         if (frontClue != frontVisible) {
             return false;
         }
     }
     if (backClue != 0) {
-        auto backVisible = visibleBuildings(verticalSkyscrapers.crbegin(),
-                                            verticalSkyscrapers.crend());
+        auto backVisible =
+            visibleBuildings(verticalFields.crbegin(), verticalFields.crend());
 
         if (backClue != backVisible) {
             return false;

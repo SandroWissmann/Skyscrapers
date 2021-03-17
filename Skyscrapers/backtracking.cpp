@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <unordered_set>
 
 namespace backtracking {
 
@@ -29,8 +28,7 @@ SolvePuzzle(const std::vector<int> &clues,
     if (board.isSolved()) {
         return board.skyscrapers2d();
     }
-
-    guessSkyscrapers(board, clues, 0, board.skyscrapers.size(), board.size());
+    guessSkyscrapers(board, clues, 0, board.fields.size(), board.size());
 
     return board.skyscrapers2d();
 }

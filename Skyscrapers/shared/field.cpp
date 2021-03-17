@@ -4,60 +4,58 @@
 
 #include <cassert>
 
-Field::Field(int &skyscraper, Nopes &nopes)
-    : mSkyscraper{&skyscraper}, mNopes{&nopes}
+Field::Field(std::size_t rowSize)
+    : mSkyscraper{0}, mNopes{static_cast<int>(rowSize)}
 {
 }
 
 void Field::insertSkyscraper(int skyscraper)
 {
-    assert(*mSkyscraper == 0 || skyscraper == *mSkyscraper);
-    if (mHasSkyscraper) {
-        return;
-    }
-    *mSkyscraper = skyscraper;
-    mHasSkyscraper = true;
-
-    mNopes->clear();
+    //    assert(mSkyscraper == 0 || skyscraper == mSkyscraper);
+    //    if (hasSkyscraper()) {
+    //        return;
+    //    }
+    mSkyscraper = skyscraper;
+    mNopes.clear();
 }
 void Field::insertNope(int nope)
 {
-    if (mHasSkyscraper) {
+    if (hasSkyscraper()) {
         return;
     }
-    mNopes->insert(nope);
+    mNopes.insert(nope);
 }
 void Field::insertNopes(const std::vector<int> &nopes)
 {
-    if (mHasSkyscraper) {
+    if (hasSkyscraper()) {
         return;
     }
-    mNopes->insert(nopes);
+    mNopes.insert(nopes);
 }
 
 bool Field::fullOfNopes() const
 {
-    return mNopes->sizeReached();
+    return mNopes.sizeReached();
 }
 
 int Field::skyscraper() const
 {
-    return *mSkyscraper;
+    return mSkyscraper;
 }
 Nopes Field::nopes() const
 {
-    return *mNopes;
+    return mNopes;
 }
 
 bool Field::hasSkyscraper() const
 {
-    return mHasSkyscraper;
+    return mSkyscraper != 0;
 }
 
 std::optional<int> Field::lastMissingNope() const
 {
-    if (!mNopes->sizeReached()) {
+    if (!mNopes.sizeReached()) {
         return {};
     }
-    return mNopes->missingNumberInSequence();
+    return mNopes.missingNumberInSequence();
 }

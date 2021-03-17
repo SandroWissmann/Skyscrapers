@@ -19,8 +19,7 @@ struct Board {
 
     bool isSolved() const;
 
-    std::vector<int> skyscrapers{};
-    std::vector<Nopes> nopes;
+    std::vector<Field> fields;
 
     std::vector<Row> mRows;
 
@@ -29,12 +28,10 @@ struct Board {
     std::size_t size() const;
 
 private:
-    void makeFields();
     void makeRows();
     void connnectRowsWithCrossingRows();
 
     std::size_t mSize;
-    std::vector<Field> mFields;
 };
 
 void debug_print(Board &board, const std::string &title = "");

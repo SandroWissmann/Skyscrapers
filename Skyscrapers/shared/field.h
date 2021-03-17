@@ -1,14 +1,14 @@
 #ifndef FIELD_H
 #define FIELD_H
 
+#include "nopes.h"
+
 #include <optional>
 #include <vector>
 
-class Nopes;
-
 class Field {
 public:
-    Field(int &skyscraper, Nopes &nopes);
+    Field(std::size_t rowSize);
 
     void insertSkyscraper(int skyscraper);
     void insertNope(int nope);
@@ -24,9 +24,8 @@ public:
     std::optional<int> lastMissingNope() const;
 
 private:
-    int *mSkyscraper;
-    Nopes *mNopes;
-    bool mHasSkyscraper = false;
+    int mSkyscraper;
+    Nopes mNopes;
 };
 
 #endif
