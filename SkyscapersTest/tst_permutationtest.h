@@ -145,9 +145,9 @@ TEST(Permutation, sky7_easy_partial)
 
 TEST(Permutation, sky7_easy_partial_2)
 {
-    EXPECT_EQ(backtracking::SolvePuzzle(sky7_easy_partial_2.clues,
-                                        sky7_easy_partial_2.board,
-                                        sky7_easy_partial_2.board.size()),
+    EXPECT_EQ(permutation::SolvePuzzle(sky7_easy_partial_2.clues,
+                                       sky7_easy_partial_2.board,
+                                       sky7_easy_partial_2.board.size()),
               sky7_easy_partial_2.result);
 }
 
