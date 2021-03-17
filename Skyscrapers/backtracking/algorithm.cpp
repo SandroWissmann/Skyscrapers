@@ -9,7 +9,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
                       std::size_t index, std::size_t countOfElements,
                       std::size_t rowSize)
 {
-    if (++index == countOfElements) {
+    if (index == countOfElements) {
         return true;
     }
     if (board.skyscrapers[index] != 0) {
@@ -21,13 +21,10 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
                              rowSize)) {
             return true;
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
-    for (int trySkyscraper = 1;
-         trySkyscraper <= static_cast<int>(board.skyscrapers.size());
+    for (int trySkyscraper = 1; trySkyscraper <= static_cast<int>(rowSize);
          ++trySkyscraper) {
 
         if (board.nopes[index].contains(trySkyscraper)) {
@@ -131,8 +128,8 @@ bool rowCluesAreValid(const std::vector<int> &skyscrapers,
         }
     }
 
-    auto critBegin = std::make_reverse_iterator(citBegin);
-    auto critEnd = std::make_reverse_iterator(citEnd);
+    auto critBegin = std::make_reverse_iterator(citEnd);
+    auto critEnd = std::make_reverse_iterator(citBegin);
 
     if (backClue != 0) {
         auto backVisible = visibleBuildings(critBegin, critEnd);
@@ -158,7 +155,7 @@ bool columnCluesAreValid(const std::vector<int> &skyscrapers,
 {
     std::size_t column = index % rowSize;
 
-    auto [frontClue, backClue] = getColumnClues(clues, index, rowSize);
+    auto [frontClue, backClue] = getColumnClues(clues, column, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
