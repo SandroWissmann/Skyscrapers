@@ -6,7 +6,7 @@
 struct TestDataProvider {
     std::vector<int> clues;
     std::vector<std::vector<int>> result;
-    std::vector<std::vector<int>> board;
+    std::vector<std::vector<int>> board{};
 };
 
 TestDataProvider sky4_easy{
