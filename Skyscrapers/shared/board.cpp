@@ -7,6 +7,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 
 Board::Board(std::size_t size)
     : fields{std::vector<Field>(size * size, Field{size})}, mSize{size}
@@ -122,8 +123,8 @@ void debug_print(Board &board, const std::string &title)
             std::cout << "V" + std::to_string(board.fields[i].skyscraper());
         }
         else if (board.fields[i].skyscraper() == 0 &&
-                 !board.fields[i].nopes().isEmpty()) {
-            auto nopes_set = board.fields[i].nopes().values();
+                 !board.fields[i].nopes().empty()) {
+            auto nopes_set = board.fields[i].nopes();
             std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
             std::sort(nopes.begin(), nopes.end());
 

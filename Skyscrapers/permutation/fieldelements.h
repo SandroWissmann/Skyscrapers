@@ -1,8 +1,6 @@
 #ifndef PERMUTATION_FIELDELEMENTS_H
 #define PERMUTATION_FIELDELEMENTS_H
 
-#include "../shared/nopes.h"
-
 #include <vector>
 
 namespace permutation {

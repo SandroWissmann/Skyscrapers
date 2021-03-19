@@ -1,61 +1,104 @@
 #include "field.h"
 
-#include "../shared/nopes.h"
-
 #include <cassert>
 
-Field::Field(std::size_t rowSize)
-    : mSkyscraper{0}, mNopes{static_cast<int>(rowSize)}
+Field::Field(std::size_t size) : mSize{size}
 {
 }
 
 void Field::insertSkyscraper(int skyscraper)
 {
-    //    assert(mSkyscraper == 0 || skyscraper == mSkyscraper);
-    //    if (hasSkyscraper()) {
-    //        return;
-    //    }
-    mSkyscraper = skyscraper;
-    mNopes.clear();
-}
-void Field::insertNope(int nope)
-{
-    if (hasSkyscraper()) {
-        return;
+    assert(skyscraper > 0 && skyscraper <= static_cast<int>(mSize));
+    BitmaskType mask = 1;
+    for (int i = 0; i < static_cast<int>(mSize); ++i) {
+        if (i != skyscraper - 1) {
+            mBitmask |= mask;
+        }
+        mask <<= 1;
     }
-    mNopes.insert(nope);
-}
-void Field::insertNopes(const std::vector<int> &nopes)
-{
-    if (hasSkyscraper()) {
-        return;
-    }
-    mNopes.insert(nopes);
 }
 
-bool Field::fullOfNopes() const
+void Field::insertNope(int nope)
 {
-    return mNopes.sizeReached();
+    assert(nope > 0 && nope <= static_cast<int>(mSize));
+    mBitmask |= 1 << (nope - 1);
+}
+
+void Field::insertNopes(const std::vector<int> &nopes)
+{
+    for (const auto nope : nopes) {
+        insertNope(nope);
+    }
 }
 
 int Field::skyscraper() const
 {
-    return mSkyscraper;
+    if (!hasSkyscraper()) {
+        return 0;
+    }
+
+    for (std::size_t i = 0; i < mSize; ++i) {
+        if (!(bitIsToggled(mBitmask, i))) {
+            return i + 1;
+        }
+    }
+    return 0;
 }
-Nopes Field::nopes() const
+
+std::vector<int> Field::nopes() const
 {
-    return mNopes;
+    std::vector<int> nopes;
+    nopes.reserve(mSize - 1);
+    for (std::size_t i = 0; i < mSize; ++i) {
+        if (bitIsToggled(mBitmask, i)) {
+            nopes.emplace_back(i + 1);
+        }
+    }
+    return nopes;
 }
 
 bool Field::hasSkyscraper() const
 {
-    return mSkyscraper != 0;
+    bool foundZero = false;
+    for (std::size_t i = 0; i < mSize; ++i) {
+        if (!(bitIsToggled(mBitmask, i))) {
+            if (!foundZero) {
+                foundZero = true;
+            }
+            else { // found more than one zero so no skyscraper present
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
-std::optional<int> Field::lastMissingNope() const
+bool Field::containsNope(int value) const
 {
-    if (!mNopes.sizeReached()) {
-        return {};
+    return bitIsToggled(mBitmask, value - 1);
+}
+
+bool Field::containsNopes(const std::vector<int> &values)
+{
+    for (const auto &value : values) {
+        if (!containsNope(value)) {
+            return false;
+        }
     }
-    return mNopes.missingNumberInSequence();
+    return true;
+}
+
+BitmaskType Field::bitmask() const
+{
+    return mBitmask;
+}
+
+void Field::setBitmask(BitmaskType bitmask)
+{
+    mBitmask = bitmask;
+}
+
+bool Field::bitIsToggled(BitmaskType bitmask, int bit) const
+{
+    return bitmask & (1 << bit);
 }

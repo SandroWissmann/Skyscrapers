@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(Skyscrapers LANGUAGES CXX)
 
 add_executable(Skyscrapers
-    shared/nopes.h
-    shared/nopes.cpp
+    shared/missingnumberinsequence
     shared/field.h
     shared/field.cpp
     shared/point.h

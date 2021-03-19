@@ -4,6 +4,9 @@
 
 #include <algorithm>
 
+#include <iostream>
+int count = 0;
+
 namespace backtracking {
 bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
                       std::size_t index, std::size_t countOfElements,
@@ -12,6 +15,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
     if (index == countOfElements) {
         return true;
     }
+
     if (board.fields[index].skyscraper() != 0) {
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
@@ -24,23 +28,26 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         return false;
     }
 
+    auto oldBitmask = board.fields[index].bitmask();
     for (int trySkyscraper = 1; trySkyscraper <= static_cast<int>(rowSize);
          ++trySkyscraper) {
 
-        if (board.fields[index].nopes().contains(trySkyscraper)) {
+        if (board.fields[index].containsNope(trySkyscraper)) {
             continue;
         }
         board.fields[index].insertSkyscraper(trySkyscraper);
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
+            board.fields[index].setBitmask(oldBitmask);
             continue;
         }
         if (guessSkyscrapers(board, clues, index + 1, countOfElements,
                              rowSize)) {
             return true;
         }
+        board.fields[index].setBitmask(oldBitmask);
     }
-    board.fields[index].insertSkyscraper(0);
+    board.fields[index].setBitmask(oldBitmask);
     return false;
 }
 

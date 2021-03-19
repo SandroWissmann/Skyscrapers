@@ -155,10 +155,7 @@ bool fieldsIdentical(const std::vector<Field> &lastFields,
     auto currPtrIt = currFields.begin();
 
     for (; lastIt != lastFields.end(); ++lastIt, ++currPtrIt) {
-        if (lastIt->skyscraper() != (*currPtrIt)->skyscraper()) {
-            return false;
-        }
-        if (lastIt->nopes().values() != (*currPtrIt)->nopes().values()) {
+        if (*lastIt != **currPtrIt) {
             return false;
         }
     }
@@ -178,8 +175,8 @@ bool isValidPermutation(const Span<int> &permutation,
                 return false;
             }
         }
-        else if (!(*fieldIt)->nopes().isEmpty()) {
-            if ((*fieldIt)->nopes().contains(*permIt)) {
+        else if (!(*fieldIt)->nopes().empty()) {
+            if ((*fieldIt)->containsNope(*permIt)) {
                 return false;
             }
         }

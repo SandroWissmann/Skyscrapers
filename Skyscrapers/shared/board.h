@@ -2,7 +2,6 @@
 #define BOARD_H
 
 #include "field.h"
-#include "nopes.h"
 #include "row.h"
 
 #include <string>
