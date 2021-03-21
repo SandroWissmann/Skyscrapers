@@ -37,14 +37,16 @@ std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
                                     std::size_t column, std::size_t rowSize);
 
 template <typename FieldIterator>
-int visibleBuildings(FieldIterator begin, FieldIterator end)
+int visibleBuildings(FieldIterator begin, FieldIterator end,
+                     std::size_t rowSize)
 {
     int visibleBuildingsCount = 0;
     int highestSeen = 0;
     for (auto it = begin; it != end; ++it) {
-        if (it->skyscraper() != 0 && it->skyscraper() > highestSeen) {
+        if (it->skyscraper(rowSize) != 0 &&
+            it->skyscraper(rowSize) > highestSeen) {
             ++visibleBuildingsCount;
-            highestSeen = it->skyscraper();
+            highestSeen = it->skyscraper(rowSize);
         }
     }
     return visibleBuildingsCount;

@@ -16,7 +16,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         return true;
     }
 
-    if (board.fields[index].skyscraper() != 0) {
+    if (board.fields[index].skyscraper(rowSize) != 0) {
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             return false;
@@ -35,7 +35,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         if (board.fields[index].containsNope(trySkyscraper)) {
             continue;
         }
-        board.fields[index].insertSkyscraper(trySkyscraper);
+        board.fields[index].insertSkyscraper(trySkyscraper, rowSize);
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             board.fields[index].setBitmask(oldBitmask);
@@ -79,7 +79,8 @@ bool rowsAreValid(const std::vector<Field> &fields, std::size_t index,
         if (currIndex == index) {
             continue;
         }
-        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
+        if (fields[currIndex].skyscraper(rowSize) ==
+            fields[index].skyscraper(rowSize)) {
             return false;
         }
     }
@@ -96,7 +97,8 @@ bool columnsAreValid(const std::vector<Field> &fields, std::size_t index,
         if (currIndex == index) {
             continue;
         }
-        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
+        if (fields[currIndex].skyscraper(rowSize) ==
+            fields[index].skyscraper(rowSize)) {
             return false;
         }
     }
@@ -121,16 +123,17 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     auto citBegin = fields.cbegin() + rowIndexBegin;
     auto citEnd = fields.cbegin() + rowIndexEnd;
 
-    bool rowIsFull = std::find_if(citBegin, citEnd, [](const Field &field) {
-                         return !field.hasSkyscraper();
-                     }) == citEnd;
+    bool rowIsFull =
+        std::find_if(citBegin, citEnd, [rowSize](const Field &field) {
+            return !field.hasSkyscraper(rowSize);
+        }) == citEnd;
 
     if (!rowIsFull) {
         return true;
     }
 
     if (frontClue != 0) {
-        auto frontVisible = visibleBuildings(citBegin, citEnd);
+        auto frontVisible = visibleBuildings(citBegin, citEnd, rowSize);
 
         if (frontClue != frontVisible) {
             return false;
@@ -141,7 +144,7 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     auto critEnd = std::make_reverse_iterator(citBegin);
 
     if (backClue != 0) {
-        auto backVisible = visibleBuildings(critBegin, critEnd);
+        auto backVisible = visibleBuildings(critBegin, critEnd, rowSize);
 
         if (backClue != backVisible) {
             return false;
@@ -179,8 +182,8 @@ bool columnCluesAreValid(const std::vector<Field> &fields,
 
     bool columnIsFull =
         std::find_if(verticalFields.cbegin(), verticalFields.cend(),
-                     [](const Field &field) {
-                         return !field.hasSkyscraper();
+                     [rowSize](const Field &field) {
+                         return !field.hasSkyscraper(rowSize);
                      }) == verticalFields.cend();
 
     if (!columnIsFull) {
@@ -188,15 +191,15 @@ bool columnCluesAreValid(const std::vector<Field> &fields,
     }
 
     if (frontClue != 0) {
-        auto frontVisible =
-            visibleBuildings(verticalFields.cbegin(), verticalFields.cend());
+        auto frontVisible = visibleBuildings(verticalFields.cbegin(),
+                                             verticalFields.cend(), rowSize);
         if (frontClue != frontVisible) {
             return false;
         }
     }
     if (backClue != 0) {
-        auto backVisible =
-            visibleBuildings(verticalFields.crbegin(), verticalFields.crend());
+        auto backVisible = visibleBuildings(verticalFields.crbegin(),
+                                            verticalFields.crend(), rowSize);
 
         if (backClue != backVisible) {
             return false;

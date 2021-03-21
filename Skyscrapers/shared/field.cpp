@@ -2,15 +2,11 @@
 
 #include <cassert>
 
-Field::Field(std::size_t size) : mSize{size}
-{
-}
-
-void Field::insertSkyscraper(int skyscraper)
+void Field::insertSkyscraper(int skyscraper, std::size_t size)
 {
     assert(skyscraper > 0 && skyscraper <= static_cast<int>(mSize));
     BitmaskType mask = 1;
-    for (int i = 0; i < static_cast<int>(mSize); ++i) {
+    for (int i = 0; i < static_cast<int>(size); ++i) {
         if (i != skyscraper - 1) {
             mBitmask |= mask;
         }
@@ -31,13 +27,13 @@ void Field::insertNopes(const std::vector<int> &nopes)
     }
 }
 
-int Field::skyscraper() const
+int Field::skyscraper(std::size_t size) const
 {
-    if (!hasSkyscraper()) {
+    if (!hasSkyscraper(size)) {
         return 0;
     }
 
-    for (std::size_t i = 0; i < mSize; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
         if (!(bitIsToggled(mBitmask, i))) {
             return i + 1;
         }
@@ -45,11 +41,11 @@ int Field::skyscraper() const
     return 0;
 }
 
-std::vector<int> Field::nopes() const
+std::vector<int> Field::nopes(std::size_t size) const
 {
     std::vector<int> nopes;
-    nopes.reserve(mSize - 1);
-    for (std::size_t i = 0; i < mSize; ++i) {
+    nopes.reserve(size - 1);
+    for (std::size_t i = 0; i < size; ++i) {
         if (bitIsToggled(mBitmask, i)) {
             nopes.emplace_back(i + 1);
         }
@@ -57,10 +53,10 @@ std::vector<int> Field::nopes() const
     return nopes;
 }
 
-bool Field::hasSkyscraper() const
+bool Field::hasSkyscraper(std::size_t size) const
 {
     bool foundZero = false;
-    for (std::size_t i = 0; i < mSize; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
         if (!(bitIsToggled(mBitmask, i))) {
             if (!foundZero) {
                 foundZero = true;

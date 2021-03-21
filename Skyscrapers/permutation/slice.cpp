@@ -170,12 +170,12 @@ bool isValidPermutation(const Span<int> &permutation,
          fieldIt != fields.cend() && permIt != permutation.cend();
          ++fieldIt, ++permIt) {
 
-        if ((*fieldIt)->hasSkyscraper()) {
-            if ((*fieldIt)->skyscraper() != *permIt) {
+        if ((*fieldIt)->hasSkyscraper(fields.size())) {
+            if ((*fieldIt)->skyscraper(fields.size()) != *permIt) {
                 return false;
             }
         }
-        else if (!(*fieldIt)->nopes().empty()) {
+        else if (!(*fieldIt)->nopes(fields.size()).empty()) {
             if ((*fieldIt)->containsNope(*permIt)) {
                 return false;
             }

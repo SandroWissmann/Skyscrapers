@@ -97,10 +97,10 @@ bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
 
     for (; fieldIt != fields.cend() && permutationIt != permutation.cend();
          ++fieldIt, ++permutationIt) {
-        if (!(*fieldIt)->hasSkyscraper()) {
+        if (!(*fieldIt)->hasSkyscraper(fields.size())) {
             continue;
         }
-        if ((*fieldIt)->skyscraper() != *permutationIt) {
+        if ((*fieldIt)->skyscraper(fields.size()) != *permutationIt) {
             return false;
         }
     }

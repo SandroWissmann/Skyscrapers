@@ -29,16 +29,16 @@ b1111 15 Invalid all nope
 
 class Field {
 public:
-    Field(std::size_t size);
+    Field() = default;
 
-    void insertSkyscraper(int skyscraper);
+    void insertSkyscraper(int skyscraper, std::size_t size);
     void insertNope(int nope);
     void insertNopes(const std::vector<int> &nopes);
 
-    int skyscraper() const;
-    std::vector<int> nopes() const;
+    int skyscraper(std::size_t size) const;
+    std::vector<int> nopes(std::size_t size) const;
 
-    bool hasSkyscraper() const;
+    bool hasSkyscraper(std::size_t size) const;
 
     bool containsNope(int value) const;
     bool containsNopes(const std::vector<int> &values);
@@ -50,7 +50,6 @@ private:
     bool bitIsToggled(BitmaskType bitmask, int bit) const;
 
     BitmaskType mBitmask{0};
-    std::size_t mSize;
 
     friend inline bool operator==(const Field &lhs, const Field &rhs);
     friend inline bool operator!=(const Field &lhs, const Field &rhs);

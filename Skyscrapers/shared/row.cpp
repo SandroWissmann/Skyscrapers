@@ -49,8 +49,8 @@ void Row::addLastMissingSkyscraper()
     sequence.reserve(size() - 1);
 
     for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
-        if ((*it)->hasSkyscraper()) {
-            sequence.emplace_back((*it)->skyscraper());
+        if ((*it)->hasSkyscraper(size())) {
+            sequence.emplace_back((*it)->skyscraper(size()));
         }
         else {
             nopeFieldIt = it;
@@ -69,7 +69,7 @@ void Row::addLastMissingSkyscraper()
 void Row::addNopesToAllNopeFields(int nope)
 {
     for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
-        if ((*it)->hasSkyscraper()) {
+        if ((*it)->hasSkyscraper(size())) {
             continue;
         }
         insertNope(it, nope);
@@ -85,7 +85,7 @@ int Row::skyscraperCount() const
 {
     int count = 0;
     for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if ((*cit)->hasSkyscraper()) {
+        if ((*cit)->hasSkyscraper(size())) {
             ++count;
         }
     }
@@ -96,7 +96,7 @@ int Row::nopeCount(int nope) const
 {
     int count = 0;
     for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if ((*cit)->hasSkyscraper()) {
+        if ((*cit)->hasSkyscraper(size())) {
             continue;
         }
         if ((*cit)->containsNope(nope)) {
@@ -177,10 +177,10 @@ bool Row::hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
     auto skyIt = skyItBegin;
     for (auto fieldIt = fieldItBegin;
          fieldIt != fieldItEnd && skyIt != skyItEnd; ++fieldIt, ++skyIt) {
-        if (*skyIt == 0 && (*fieldIt)->hasSkyscraper()) {
+        if (*skyIt == 0 && (*fieldIt)->hasSkyscraper(size())) {
             continue;
         }
-        if ((*fieldIt)->skyscraper() != *skyIt) {
+        if ((*fieldIt)->skyscraper(size()) != *skyIt) {
             return false;
         }
     }
@@ -198,7 +198,7 @@ bool Row::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
         if (nopesIt->empty()) {
             continue;
         }
-        if ((*fieldIt)->hasSkyscraper()) {
+        if ((*fieldIt)->hasSkyscraper(size())) {
             return false;
         }
         if (!(*fieldIt)->containsNopes(*nopesIt)) {
@@ -241,10 +241,10 @@ void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
 {
     assert(mCrossingRows.size() == size());
 
-    if ((*fieldIt)->hasSkyscraper()) {
+    if ((*fieldIt)->hasSkyscraper(size())) {
         return;
     }
-    (*fieldIt)->insertSkyscraper(skyscraper);
+    (*fieldIt)->insertSkyscraper(skyscraper, size());
 
     if (hasOnlyOneNopeField()) {
         addLastMissingSkyscraper();
@@ -263,20 +263,20 @@ void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
 template <typename FieldIterator>
 void Row::insertNope(FieldIterator fieldIt, int nope)
 {
-    if ((*fieldIt)->hasSkyscraper()) {
+    if ((*fieldIt)->hasSkyscraper(size())) {
         return;
     }
     if ((*fieldIt)->containsNope(nope)) {
         return;
     }
 
-    bool hasSkyscraperBefore = (*fieldIt)->hasSkyscraper();
+    bool hasSkyscraperBefore = (*fieldIt)->hasSkyscraper(size());
     (*fieldIt)->insertNope(nope);
 
     // skyscraper was added so we have to add nopes to the neighbours
     // probaly could insert only nopes directly
-    if (!hasSkyscraperBefore && (*fieldIt)->hasSkyscraper()) {
-        insertSkyscraper(fieldIt, (*fieldIt)->skyscraper());
+    if (!hasSkyscraperBefore && (*fieldIt)->hasSkyscraper(size())) {
+        insertSkyscraper(fieldIt, (*fieldIt)->skyscraper(size()));
     }
 
     if (onlyOneFieldWithoutNope(nope)) {
@@ -347,9 +347,10 @@ bool Row::onlyOneFieldWithoutNope(int nope) const
 bool Row::nopeExistsAsSkyscraperInFields(const std::vector<Field *> &rowFields,
                                          int nope) const
 {
-    auto cit = std::find_if(
-        rowFields.cbegin(), rowFields.cend(),
-        [nope](const auto &field) { return field->skyscraper() == nope; });
+    auto cit = std::find_if(rowFields.cbegin(), rowFields.cend(),
+                            [nope, size = size()](const auto &field) {
+                                return field->skyscraper(size) == nope;
+                            });
     return cit != rowFields.cend();
 }
 
@@ -358,8 +359,8 @@ std::optional<int> Row::nopeValueInAllButOneField() const
     std::unordered_map<int, int> nopeAndCount;
 
     for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if (!(*cit)->hasSkyscraper()) {
-            auto nopes = (*cit)->nopes();
+        if (!(*cit)->hasSkyscraper(size())) {
+            auto nopes = (*cit)->nopes(size());
             for (const auto &nope : nopes) {
                 if (hasSkyscraper(nope)) {
                     continue;
@@ -379,7 +380,7 @@ std::optional<int> Row::nopeValueInAllButOneField() const
 void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
 {
     for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
-        if ((*it)->hasSkyscraper()) {
+        if ((*it)->hasSkyscraper(size())) {
             continue;
         }
         if (!(*it)->containsNope(nope)) {
@@ -392,7 +393,7 @@ void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
 bool Row::hasSkyscraper(int skyscraper) const
 {
     for (const auto &field : mRowFields) {
-        if (field->skyscraper() == skyscraper) {
+        if (field->skyscraper(size()) == skyscraper) {
             return true;
         }
     }
