@@ -244,7 +244,7 @@ void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
     if ((*fieldIt)->hasSkyscraper(size())) {
         return;
     }
-    (*fieldIt)->insertSkyscraper(skyscraper, size());
+    (*fieldIt)->insertSkyscraper(skyscraper);
 
     if (hasOnlyOneNopeField()) {
         addLastMissingSkyscraper();

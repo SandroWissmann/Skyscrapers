@@ -31,7 +31,7 @@ class Field {
 public:
     Field() = default;
 
-    void insertSkyscraper(int skyscraper, std::size_t size);
+    void insertSkyscraper(int skyscraper);
     void insertNope(int nope);
     void insertNopes(const std::vector<int> &nopes);
 

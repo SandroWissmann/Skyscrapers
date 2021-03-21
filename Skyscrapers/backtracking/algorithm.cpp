@@ -35,7 +35,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         if (board.fields[index].containsNope(trySkyscraper)) {
             continue;
         }
-        board.fields[index].insertSkyscraper(trySkyscraper, rowSize);
+        board.fields[index].insertSkyscraper(trySkyscraper);
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             board.fields[index].setBitmask(oldBitmask);

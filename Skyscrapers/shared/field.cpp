@@ -2,21 +2,13 @@
 
 #include <cassert>
 
-void Field::insertSkyscraper(int skyscraper, std::size_t size)
+void Field::insertSkyscraper(int skyscraper)
 {
-    assert(skyscraper > 0 && skyscraper <= static_cast<int>(mSize));
-    BitmaskType mask = 1;
-    for (int i = 0; i < static_cast<int>(size); ++i) {
-        if (i != skyscraper - 1) {
-            mBitmask |= mask;
-        }
-        mask <<= 1;
-    }
+    mBitmask = ~(1 << (skyscraper - 1));
 }
 
 void Field::insertNope(int nope)
 {
-    assert(nope > 0 && nope <= static_cast<int>(mSize));
     mBitmask |= 1 << (nope - 1);
 }
 
