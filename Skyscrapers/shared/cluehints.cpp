@@ -5,31 +5,24 @@
 #include <unordered_set>
 
 ClueHints::ClueHints(std::size_t boardSize)
-    : skyscrapers{std::vector<int>(boardSize, 0)},
-      nopes{std::vector<std::vector<int>>(boardSize, std::vector<int>{})}
+    : fields{std::vector<Field>(boardSize, Field{})}
 {
 }
 
 void ClueHints::reverse()
 {
-    std::reverse(skyscrapers.begin(), skyscrapers.end());
-    std::reverse(nopes.begin(), nopes.end());
+    std::reverse(fields.begin(), fields.end());
 }
 
-void ClueHints::removeNopesOnSkyscrapers()
+bool ClueHints::isEmpty() const
 {
-    for (std::size_t i = 0; i < skyscrapers.size(); ++i) {
-        if (skyscrapers[i] == 0) {
-            continue;
-        }
-        nopes[i].clear();
-    }
+    return fields.empty();
 }
 
-std::vector<std::optional<ClueHints>>
-getClueHints(const std::vector<int> &clues, std::size_t boardSize)
+std::vector<ClueHints> getClueHints(const std::vector<int> &clues,
+                                    std::size_t boardSize)
 {
-    std::vector<std::optional<ClueHints>> clueHints;
+    std::vector<ClueHints> clueHints;
     clueHints.reserve(clues.size());
 
     for (const auto &clue : clues) {
@@ -39,28 +32,25 @@ getClueHints(const std::vector<int> &clues, std::size_t boardSize)
     return clueHints;
 }
 
-std::optional<ClueHints> getClueHints(int clue, std::size_t boardSize)
+ClueHints getClueHints(int clue, std::size_t boardSize)
 {
     if (clue == 0) {
-        return {};
+        return ClueHints{};
     }
 
     ClueHints clueHints{boardSize};
 
-    std::vector<std::unordered_set<int>> nopes(boardSize,
-                                               std::unordered_set<int>{});
-
     if (clue == static_cast<int>(boardSize)) {
         for (std::size_t i = 0; i < boardSize; ++i) {
-            clueHints.skyscrapers[i] = i + 1;
+            clueHints.fields[i].insertSkyscraper(i + 1);
         }
     }
     else if (clue == 1) {
-        clueHints.skyscrapers[0] = boardSize;
+        clueHints.fields[0].insertSkyscraper(boardSize);
     }
     else if (clue == 2) {
-        nopes[0].insert(boardSize);
-        nopes[1].insert(boardSize - 1);
+        clueHints.fields[0].insertNope(boardSize);
+        clueHints.fields[1].insertNope(boardSize - 1);
     }
     else {
         for (std::size_t fieldIdx = 0;
@@ -69,20 +59,14 @@ std::optional<ClueHints> getClueHints(int clue, std::size_t boardSize)
             for (std::size_t nopeValue = boardSize;
                  nopeValue >= (boardSize - (clue - 2) + fieldIdx);
                  --nopeValue) {
-                nopes[fieldIdx].insert(nopeValue);
+                clueHints.fields[fieldIdx].insertNope(nopeValue);
             }
         }
     }
-
-    assert(nopes.size() == clueHints.nopes.size());
-
-    for (std::size_t i = 0; i < nopes.size(); ++i) {
-        clueHints.nopes[i] = std::vector<int>(nopes[i].begin(), nopes[i].end());
-    }
-    return {clueHints};
+    return clueHints;
 }
 
-void mergeClueHintsPerRow(std::vector<std::optional<ClueHints>> &clueHints)
+void mergeClueHintsPerRow(std::vector<ClueHints> &clueHints)
 {
     std::size_t startOffset = clueHints.size() / 4 * 3 - 1;
     std::size_t offset = startOffset;
@@ -101,60 +85,26 @@ void mergeClueHintsPerRow(std::vector<std::optional<ClueHints>> &clueHints)
     clueHints.erase(clueHints.begin() + clueHints.size() / 2, clueHints.end());
 }
 
-std::optional<ClueHints> merge(std::optional<ClueHints> optFrontClueHints,
-                               std::optional<ClueHints> optBackClueHints)
+ClueHints merge(ClueHints frontClueHints, ClueHints backClueHints)
 {
-    if (!optFrontClueHints && !optBackClueHints) {
-        return {};
+    if (frontClueHints.isEmpty() && backClueHints.isEmpty()) {
+        return frontClueHints;
     }
-    if (!optFrontClueHints) {
-        optBackClueHints->reverse();
-        return optBackClueHints;
+    if (frontClueHints.isEmpty()) {
+        backClueHints.reverse();
+        return backClueHints;
     }
-    if (!optBackClueHints) {
-        return optFrontClueHints;
+    if (!backClueHints.isEmpty()) {
+        return backClueHints;
     }
 
-    auto size = optFrontClueHints->skyscrapers.size();
-    ClueHints clueHints{size};
+    assert(frontClueHints.fields.size() == backClueHints.fields.size());
 
-    assert(optFrontClueHints->skyscrapers.size() ==
-           optFrontClueHints->nopes.size());
-    assert(optBackClueHints->skyscrapers.size() ==
-           optBackClueHints->nopes.size());
-    assert(optFrontClueHints->skyscrapers.size() ==
-           optBackClueHints->skyscrapers.size());
+    backClueHints.reverse();
 
-    optBackClueHints->reverse();
-
-    for (std::size_t i = 0; i < optFrontClueHints->skyscrapers.size(); ++i) {
-
-        auto frontSkyscraper = optFrontClueHints->skyscrapers[i];
-        auto backSkyscraper = optBackClueHints->skyscrapers[i];
-
-        if (frontSkyscraper != 0 && backSkyscraper != 0) {
-            assert(frontSkyscraper == backSkyscraper);
-            clueHints.skyscrapers[i] = frontSkyscraper;
-        }
-        else if (frontSkyscraper != 0) {
-            clueHints.skyscrapers[i] = frontSkyscraper;
-            clueHints.nopes[i].clear();
-        }
-        else { // backSkyscraper != 0
-            clueHints.skyscrapers[i] = backSkyscraper;
-            clueHints.nopes[i].clear();
-        }
-
-        if (clueHints.skyscrapers[i] != 0) {
-            continue;
-        }
-
-        std::unordered_set<int> nopes(optFrontClueHints->nopes[i].begin(),
-                                      optFrontClueHints->nopes[i].end());
-        nopes.insert(optBackClueHints->nopes[i].begin(),
-                     optBackClueHints->nopes[i].end());
-        clueHints.nopes[i] = std::vector<int>(nopes.begin(), nopes.end());
+    for (std::size_t i = 0; i < frontClueHints.fields.size(); ++i) {
+        frontClueHints.fields[i].setBitmask(frontClueHints.fields[i].bitmask() |
+                                            backClueHints.fields[i].bitmask());
     }
-    clueHints.removeNopesOnSkyscrapers();
-    return {clueHints};
+    return frontClueHints;
 }

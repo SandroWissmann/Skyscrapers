@@ -15,17 +15,29 @@ Board::Board(std::size_t size)
     makeRows();
 }
 
-void Board::insert(const std::vector<std::optional<ClueHints>> &clueHints)
+void Board::insert(const std::vector<ClueHints> &clueHints)
 {
     assert(clueHints.size() == mRows.size());
 
     for (std::size_t i = 0; i < clueHints.size(); ++i) {
-        if (!clueHints[i]) {
+        if (clueHints[i].isEmpty()) {
             continue;
         }
-        mRows[i].addNopes(clueHints[i]->nopes, Row::Direction::front);
-        mRows[i].addSkyscrapers(clueHints[i]->skyscrapers,
-                                Row::Direction::front);
+
+        // ugly adaptor for now should be replaced later
+        std::vector<int> skyscrapers{};
+        skyscrapers.reserve(clueHints[i].fields.size());
+
+        std::vector<std::vector<int>> nopes;
+        nopes.reserve(clueHints[i].fields.size());
+
+        for (const auto &field : clueHints[i].fields) {
+            skyscrapers.emplace_back(field.skyscraper(mSize));
+            nopes.emplace_back(field.nopes(mSize));
+        }
+
+        mRows[i].addNopes(nopes, Row::Direction::front);
+        mRows[i].addSkyscrapers(skyscrapers, Row::Direction::front);
     }
 }
 

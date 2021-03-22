@@ -1,8 +1,9 @@
 #ifndef CLUEHINTS_H
 #define CLUEHINTS_H
 
+#include "field.h"
+
 #include <cstddef>
-#include <optional>
 #include <vector>
 
 struct ClueHints {
@@ -11,20 +12,18 @@ struct ClueHints {
 
     void reverse();
 
-    void removeNopesOnSkyscrapers();
+    bool isEmpty() const;
 
-    std::vector<int> skyscrapers{};
-    std::vector<std::vector<int>> nopes{};
+    std::vector<Field> fields;
 };
 
-std::vector<std::optional<ClueHints>>
-getClueHints(const std::vector<int> &clues, std::size_t boardSize);
+std::vector<ClueHints> getClueHints(const std::vector<int> &clues,
+                                    std::size_t boardSize);
 
-std::optional<ClueHints> getClueHints(int clue, std::size_t boardSize);
+ClueHints getClueHints(int clue, std::size_t boardSize);
 
-void mergeClueHintsPerRow(std::vector<std::optional<ClueHints>> &clueHints);
+void mergeClueHintsPerRow(std::vector<ClueHints> &clueHints);
 
-std::optional<ClueHints> merge(std::optional<ClueHints> optFrontClueHints,
-                               std::optional<ClueHints> optBackClueHints);
+ClueHints merge(ClueHints frontClueHints, ClueHints backClueHints);
 
 #endif
