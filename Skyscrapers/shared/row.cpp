@@ -15,14 +15,6 @@ Row::Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
 {
 }
 
-void Row::insertSkyscraper(int pos, int skyscraper)
-{
-    assert(pos >= 0 && pos < static_cast<int>(mRowFields.size()));
-    assert(skyscraper > 0 && skyscraper <= static_cast<int>(mRowFields.size()));
-    auto it = mRowFields.begin() + pos;
-    insertSkyscraper(it, skyscraper);
-}
-
 std::size_t Row::size() const
 {
     return mRowFields.size();
@@ -139,6 +131,18 @@ bool Row::hasNopes(const std::vector<std::vector<int>> &nopes,
                     mRowFields.crend());
 }
 
+void Row::addFieldData(const std::vector<Field> &fieldData, Direction direction)
+{
+    if (direction == Direction::front) {
+        addFieldData(fieldData.begin(), fieldData.end(), mRowFields.begin(),
+                     mRowFields.end());
+    }
+    else {
+        addFieldData(fieldData.begin(), fieldData.end(), mRowFields.rbegin(),
+                     mRowFields.rend());
+    }
+}
+
 void Row::addSkyscrapers(const std::vector<int> &skyscrapers,
                          Direction direction)
 {
@@ -151,6 +155,7 @@ void Row::addSkyscrapers(const std::vector<int> &skyscrapers,
                        mRowFields.rbegin(), mRowFields.rend());
     }
 }
+
 void Row::addNopes(const std::vector<std::vector<int>> &nopes,
                    Direction direction)
 {
@@ -208,6 +213,19 @@ bool Row::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
     return true;
 }
 
+template <typename FieldDataIterator, typename FieldIterator>
+void Row::addFieldData(FieldDataIterator fieldDataItBegin,
+                       FieldDataIterator fieldDataItEnd,
+                       FieldIterator fieldItBegin, FieldIterator fieldItEnd)
+{
+    auto fieldDataIt = fieldDataItBegin;
+    for (auto fieldIt = fieldItBegin;
+         fieldIt != fieldItEnd && fieldDataIt != fieldDataItEnd;
+         ++fieldIt, ++fieldDataIt) {
+        insertFieldData(fieldIt, *fieldDataIt);
+    }
+}
+
 template <typename SkyIterator, typename FieldIterator>
 void Row::addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
                          FieldIterator fieldItBegin, FieldIterator fieldItEnd)
@@ -237,6 +255,29 @@ void Row::addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
 }
 
 template <typename FieldIterator>
+void Row::insertFieldData(const FieldIterator &fieldIt, const Field &fieldData)
+{
+    if (fieldData.hasSkyscraper()) {
+        if ((*fieldIt)->hasSkyscraper()) {
+            return;
+        }
+        (*fieldIt)->setBitmask(fieldData.bitmask());
+        insertSkyscraperNeighbourHandling(fieldIt,
+                                          (*fieldIt)->skyscraper(size()));
+    }
+    else {
+        bool hasSkyscraperBefore = (*fieldIt)->hasSkyscraper();
+        (*fieldIt)->insertNopes(fieldData);
+
+        auto nopes = fieldData.nopes(size());
+
+        for (const auto &nope : nopes) {
+            insertNopesNeighbourHandling(fieldIt, nope, hasSkyscraperBefore);
+        }
+    }
+}
+
+template <typename FieldIterator>
 void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
 {
     assert(mCrossingRows.size() == size());
@@ -246,6 +287,13 @@ void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
     }
     (*fieldIt)->insertSkyscraper(skyscraper);
 
+    insertSkyscraperNeighbourHandling(fieldIt, skyscraper);
+}
+
+template <typename FieldIterator>
+void Row::insertSkyscraperNeighbourHandling(FieldIterator fieldIt,
+                                            int skyscraper)
+{
     if (hasOnlyOneNopeField()) {
         addLastMissingSkyscraper();
     }
@@ -273,9 +321,16 @@ void Row::insertNope(FieldIterator fieldIt, int nope)
     bool hasSkyscraperBefore = (*fieldIt)->hasSkyscraper();
     (*fieldIt)->insertNope(nope);
 
+    insertNopesNeighbourHandling(fieldIt, nope, hasSkyscraperBefore);
+}
+
+template <typename FieldIterator>
+void Row::insertNopesNeighbourHandling(FieldIterator fieldIt, int nope,
+                                       bool hadSkyscraperBefore)
+{
     // skyscraper was added so we have to add nopes to the neighbours
     // probaly could insert only nopes directly
-    if (!hasSkyscraperBefore && (*fieldIt)->hasSkyscraper()) {
+    if (!hadSkyscraperBefore && (*fieldIt)->hasSkyscraper()) {
         insertSkyscraper(fieldIt, (*fieldIt)->skyscraper(size()));
     }
 
@@ -290,11 +345,11 @@ void Row::insertNope(FieldIterator fieldIt, int nope)
     }
 }
 
-template <typename IteratorType>
-void Row::insertNopes(IteratorType it, const std::vector<int> &nopes)
+template <typename FieldIterator>
+void Row::insertNopes(FieldIterator fieldIt, const std::vector<int> &nopes)
 {
     for (const auto &nope : nopes) {
-        insertNope(it, nope);
+        insertNope(fieldIt, nope);
     }
 }
 

@@ -19,6 +19,11 @@ void Field::insertNopes(const std::vector<int> &nopes)
     }
 }
 
+void Field::insertNopes(const Field &field)
+{
+    mBitmask &= field.bitmask();
+}
+
 int Field::skyscraper(std::size_t size) const
 {
     if (!hasSkyscraper()) {

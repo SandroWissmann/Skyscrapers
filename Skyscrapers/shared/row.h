@@ -11,10 +11,8 @@ class Point;
 
 class Row {
 public:
-    Row(std::vector<Field> &fields, std::size_t size,
-        const Point &startPoint, const ReadDirection &readDirection);
-
-    void insertSkyscraper(int pos, int skyscraper);
+    Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
+        const ReadDirection &readDirection);
 
     std::size_t size() const;
 
@@ -39,6 +37,8 @@ public:
     bool hasNopes(const std::vector<std::vector<int>> &nopes,
                   Direction direction) const;
 
+    void addFieldData(const std::vector<Field> &fieldData, Direction direction);
+
     void addSkyscrapers(const std::vector<int> &skyscrapers,
                         Direction direction);
     void addNopes(const std::vector<std::vector<int>> &nopes,
@@ -56,6 +56,11 @@ private:
     bool hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
                   FieldIterator fieldItBegin, FieldIterator fieldItEnd) const;
 
+    template <typename FieldDataIterator, typename FieldIterator>
+    void addFieldData(FieldDataIterator fieldDataItBegin,
+                      FieldDataIterator fieldDataItEnd,
+                      FieldIterator fieldItBegin, FieldIterator fieldItEnd);
+
     template <typename SkyIterator, typename FieldIterator>
     void addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
                         FieldIterator fieldItBegin, FieldIterator fieldItEnd);
@@ -64,27 +69,38 @@ private:
     void addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
                   FieldIterator fieldItBegin, FieldIterator fieldItEnd);
 
-    template <typename IteratorType>
-    void insertSkyscraper(IteratorType it, int skyscraper);
+    template <typename FieldIterator>
+    void insertFieldData(const FieldIterator &fieldIt, const Field &fieldData);
 
-    template <typename IteratorType> void insertNope(IteratorType it, int nope);
+    template <typename FieldIterator>
+    void insertSkyscraper(FieldIterator fieldIt, int skyscraper);
 
-    template <typename IteratorType>
-    void insertNopes(IteratorType it, const std::vector<int> &nopes);
+    template <typename FieldIterator>
+    void insertSkyscraperNeighbourHandling(FieldIterator fieldIt,
+                                           int skyscraper);
+
+    template <typename FieldIterator>
+    void insertNope(FieldIterator fieldIt, int nope);
+
+    template <typename FieldIterator>
+    void insertNopesNeighbourHandling(FieldIterator fieldIt, int nopes,
+                                      bool hadSkyscraperBefore);
+
+    template <typename FieldIterator>
+    void insertNopes(FieldIterator fieldIt, const std::vector<int> &nopes);
 
     int getIdx(std::vector<Field *>::const_iterator cit) const;
     int getIdx(std::vector<Field *>::const_reverse_iterator crit) const;
 
     std::vector<Field *> getRowFields(const ReadDirection &readDirection,
-                                         std::vector<Field> &boardFields,
-                                         std::size_t size,
-                                         const Point &startPoint);
+                                      std::vector<Field> &boardFields,
+                                      std::size_t size,
+                                      const Point &startPoint);
 
     bool onlyOneFieldWithoutNope(int nope) const;
 
-    bool
-    nopeExistsAsSkyscraperInFields(const std::vector<Field *> &rowFields,
-                                   int nope) const;
+    bool nopeExistsAsSkyscraperInFields(const std::vector<Field *> &rowFields,
+                                        int nope) const;
 
     std::optional<int> nopeValueInAllButOneField() const;
 

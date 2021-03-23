@@ -23,21 +23,7 @@ void Board::insert(const std::vector<ClueHints> &clueHints)
         if (clueHints[i].isEmpty()) {
             continue;
         }
-
-        // ugly adaptor for now should be replaced later
-        std::vector<int> skyscrapers{};
-        skyscrapers.reserve(clueHints[i].fields.size());
-
-        std::vector<std::vector<int>> nopes;
-        nopes.reserve(clueHints[i].fields.size());
-
-        for (const auto &field : clueHints[i].fields) {
-            skyscrapers.emplace_back(field.skyscraper(mSize));
-            nopes.emplace_back(field.nopes(mSize));
-        }
-
-        mRows[i].addNopes(nopes, Row::Direction::front);
-        mRows[i].addSkyscrapers(skyscrapers, Row::Direction::front);
+        mRows[i].addFieldData(clueHints[i].fields, Row::Direction::front);
     }
 }
 
