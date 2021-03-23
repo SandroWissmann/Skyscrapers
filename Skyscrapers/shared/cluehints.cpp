@@ -94,7 +94,7 @@ ClueHints merge(ClueHints frontClueHints, ClueHints backClueHints)
         backClueHints.reverse();
         return backClueHints;
     }
-    if (!backClueHints.isEmpty()) {
+    if (backClueHints.isEmpty()) {
         return backClueHints;
     }
 
