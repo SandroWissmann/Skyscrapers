@@ -103,8 +103,18 @@ ClueHints merge(ClueHints frontClueHints, ClueHints backClueHints)
     backClueHints.reverse();
 
     for (std::size_t i = 0; i < frontClueHints.fields.size(); ++i) {
-        frontClueHints.fields[i].setBitmask(frontClueHints.fields[i].bitmask() |
-                                            backClueHints.fields[i].bitmask());
+
+        if (frontClueHints.fields[i].hasSkyscraper()) {
+            continue;
+        }
+        else if (backClueHints.fields[i].hasSkyscraper()) {
+            frontClueHints.fields[i].setBitmask(
+                frontClueHints.fields[i].bitmask() |
+                backClueHints.fields[i].bitmask());
+        }
+        else { // only nopes merge nopes
+            frontClueHints.fields[i].insertNopes(backClueHints.fields[i]);
+        }
     }
     return frontClueHints;
 }
