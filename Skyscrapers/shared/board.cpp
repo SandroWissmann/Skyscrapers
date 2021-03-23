@@ -130,10 +130,12 @@ void debug_print(Board &board, const std::string &title)
             std::cout << '\n';
         }
 
+        auto elementSize = board.size() * 2;
+        std::string element;
+        element.reserve(elementSize);
         if (board.fields[i].skyscraper(board.size()) != 0) {
-            std::cout << std::setw(board.size() * 2);
-            std::cout << "V" + std::to_string(
-                                   board.fields[i].skyscraper(board.size()));
+            element =
+                "V" + std::to_string(board.fields[i].skyscraper(board.size()));
         }
         else if (board.fields[i].skyscraper(board.size()) == 0 &&
                  !board.fields[i].nopes(board.size()).empty()) {
@@ -141,19 +143,15 @@ void debug_print(Board &board, const std::string &title)
             std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
             std::sort(nopes.begin(), nopes.end());
 
-            std::string nopesStr;
             for (std::size_t i = 0; i < nopes.size(); ++i) {
-                nopesStr.append(std::to_string(nopes[i]));
+                element.append(std::to_string(nopes[i]));
                 if (i != nopes.size() - 1) {
-                    nopesStr.push_back(',');
+                    element.push_back(',');
                 }
             }
-            std::cout << std::setw(board.size() * 2);
-            std::cout << nopesStr;
         }
-        else {
-            std::cout << ' ';
-        }
+        element.resize(elementSize, ' ');
+        std::cout << element;
     }
     std::cout << '\n';
 }
