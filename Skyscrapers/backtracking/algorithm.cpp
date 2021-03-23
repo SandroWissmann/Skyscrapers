@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include <iostream>
-int count = 0;
 
 namespace backtracking {
 bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
@@ -16,7 +15,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         return true;
     }
 
-    if (board.fields[index].skyscraper(rowSize) != 0) {
+    if (board.fields[index].hasSkyscraper()) {
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             return false;
@@ -123,10 +122,9 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     auto citBegin = fields.cbegin() + rowIndexBegin;
     auto citEnd = fields.cbegin() + rowIndexEnd;
 
-    bool rowIsFull =
-        std::find_if(citBegin, citEnd, [rowSize](const Field &field) {
-            return !field.hasSkyscraper(rowSize);
-        }) == citEnd;
+    bool rowIsFull = std::find_if(citBegin, citEnd, [](const Field &field) {
+                         return !field.hasSkyscraper();
+                     }) == citEnd;
 
     if (!rowIsFull) {
         return true;
@@ -182,8 +180,8 @@ bool columnCluesAreValid(const std::vector<Field> &fields,
 
     bool columnIsFull =
         std::find_if(verticalFields.cbegin(), verticalFields.cend(),
-                     [rowSize](const Field &field) {
-                         return !field.hasSkyscraper(rowSize);
+                     [](const Field &field) {
+                         return !field.hasSkyscraper();
                      }) == verticalFields.cend();
 
     if (!columnIsFull) {
