@@ -36,8 +36,18 @@ void Board::insert(const std::vector<std::vector<int>> &startingSkyscrapers)
     assert(startingSkyscrapers.size() == boardSize);
 
     for (std::size_t i = 0; i < startingSkyscrapers.size(); ++i) {
-        mRows[i + boardSize].addSkyscrapers(startingSkyscrapers[i],
-                                            Row::Direction::back);
+
+        // ugly glue code probaly better to set skyscrapers directly in the
+        // fields
+        std::vector<Field> fields(startingSkyscrapers[i].size());
+
+        for (std::size_t fieldIdx = 0; fieldIdx < fields.size(); ++fieldIdx) {
+            if (startingSkyscrapers[i][fieldIdx] == 0) {
+                continue;
+            }
+            fields[fieldIdx].insertSkyscraper(startingSkyscrapers[i][fieldIdx]);
+        }
+        mRows[i + boardSize].addFieldData(fields, Row::Direction::back);
     }
 }
 

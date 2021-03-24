@@ -19,8 +19,22 @@ Slice::Slice(Permutations &permutations,
     auto possibleBuildings = getPossibleBuildings();
     auto fieldElements = getFieldElements(possibleBuildings);
 
-    mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-    mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+    // ugly adaptor better turn field elements directly in to field collection
+    std::vector<Field> fields(fieldElements.skyscrapers.size());
+
+    for (std::size_t i = 0; i < fieldElements.skyscrapers.size(); ++i) {
+        if (fieldElements.skyscrapers[i] != 0) {
+            fields[i].insertSkyscraper(fieldElements.skyscrapers[i]);
+        }
+        else if (!fieldElements.nopes[i].empty()) {
+            fields[i].insertNopes(fieldElements.nopes[i]);
+        }
+    }
+
+    mRow->addFieldData(fields, Row::Direction::front);
+
+    // mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
+    // mRow->addNopes(fieldElements.nopes, Row::Direction::front);
 }
 
 void Slice::guessSkyscraperOutOfNeighbourNopes()
@@ -46,8 +60,24 @@ void Slice::solveFromPossiblePermutations()
         auto possibleBuildings = getPossibleBuildings();
         auto fieldElements = getFieldElements(possibleBuildings);
 
-        mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-        mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+        // ugly adaptor better turn field elements directly in to field
+        // collection
+        std::vector<Field> fields(fieldElements.skyscrapers.size());
+
+        for (std::size_t i = 0; i < fieldElements.skyscrapers.size(); ++i) {
+            if (fieldElements.skyscrapers[i] != 0) {
+                fields[i].insertSkyscraper(fieldElements.skyscrapers[i]);
+            }
+            else if (!fieldElements.nopes[i].empty()) {
+                fields[i].insertNopes(fieldElements.nopes[i]);
+            }
+        }
+
+        mRow->addFieldData(fields, Row::Direction::front);
+
+        // mRow->addSkyscrapers(fieldElements.skyscrapers,
+        // Row::Direction::front); mRow->addNopes(fieldElements.nopes,
+        // Row::Direction::front);
 
         if (fieldsIdentical(lastFields, mRow->getFields())) {
             break;
