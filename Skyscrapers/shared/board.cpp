@@ -91,8 +91,8 @@ void Board::makeRows()
     mRows.reserve(rowSize);
 
     for (std::size_t i = 0; i < rowSize; ++i, ++borderIterator) {
-        mRows.emplace_back(Row{fields, mSize, borderIterator.point(),
-                               borderIterator.readDirection()});
+        mRows.emplace_back(
+            Row{*this, borderIterator.point(), borderIterator.readDirection()});
     }
     connnectRowsWithCrossingRows();
 }

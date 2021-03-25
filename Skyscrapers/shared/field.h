@@ -42,7 +42,7 @@ public:
     bool hasSkyscraper() const;
 
     bool containsNope(int value) const;
-    bool containsNopes(const std::vector<int> &values);
+    bool containsNopes(const std::vector<int> &values) const;
 
     BitmaskType bitmask() const;
     void setBitmask(BitmaskType bitmask);

@@ -55,9 +55,7 @@ void Permutations::addSequenceToCluePairs(const std::vector<int> &sequence,
         if (!permutationFitsCluePair(mCluePairs[i], front, back)) {
             continue;
         }
-        auto fields = mRows[i].getFields();
-
-        if (!existingSkyscrapersInPermutation(fields, sequence)) {
+        if (!existingSkyscrapersInPermutation(i, sequence)) {
             continue;
         }
         mCluePairsPermutationIndexes[i].emplace_back(currIndex);
@@ -87,20 +85,17 @@ int factorial(int n)
     return n * factorial(n - 1);
 }
 
-bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
-                                      const std::vector<int> &permutation)
+bool Permutations::existingSkyscrapersInPermutation(
+    std::size_t rowIdx, const std::vector<int> &permutation)
 {
     assert(fields.size() == permutation.size());
 
-    auto fieldIt = fields.cbegin();
-    auto permutationIt = permutation.cbegin();
-
-    for (; fieldIt != fields.cend() && permutationIt != permutation.cend();
-         ++fieldIt, ++permutationIt) {
-        if (!(*fieldIt)->hasSkyscraper()) {
+    for (std::size_t idx = 0; idx < permutation.size(); ++idx) {
+        if (!mRows[rowIdx].getFieldRef(idx).hasSkyscraper()) {
             continue;
         }
-        if ((*fieldIt)->skyscraper(fields.size()) != *permutationIt) {
+        if (mRows[rowIdx].getFieldRef(idx).skyscraper(mSize) !=
+            permutation[idx]) {
             return false;
         }
     }

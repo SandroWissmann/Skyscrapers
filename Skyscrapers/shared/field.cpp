@@ -61,7 +61,7 @@ bool Field::containsNope(int value) const
     return !bitIsToggled(mBitmask, value - 1);
 }
 
-bool Field::containsNopes(const std::vector<int> &values)
+bool Field::containsNopes(const std::vector<int> &values) const
 {
     for (const auto &value : values) {
         if (!containsNope(value)) {

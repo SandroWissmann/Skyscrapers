@@ -25,6 +25,9 @@ private:
 
     bool permutationFitsCluePair(const CluePair &cluePair, int front, int back);
 
+    bool existingSkyscrapersInPermutation(std::size_t rowIdx,
+                                          const std::vector<int> &permutation);
+
     Span<CluePair> mCluePairs;
     Span<Row> mRows;
 
@@ -51,9 +54,6 @@ int buildingsVisible(BuildingIt begin, BuildingIt end)
     }
     return visibleBuildingsCount;
 }
-
-bool existingSkyscrapersInPermutation(const std::vector<Field *> &fields,
-                                      const std::vector<int> &permutation);
 
 } // namespace permutation
 

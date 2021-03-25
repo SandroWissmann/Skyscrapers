@@ -1,20 +1,19 @@
 #ifndef ROW_H
 #define ROW_H
 
+#include "../shared/point.h"
 #include "../shared/readdirection.h"
 
 #include <optional>
 #include <vector>
 
 class Field;
-class Point;
+class Board;
 
 class Row {
 public:
-    Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
+    Row(Board &board, const Point &startPoint,
         const ReadDirection &readDirection);
-
-    std::size_t size() const;
 
     void addCrossingRows(Row *crossingRow);
 
@@ -39,46 +38,30 @@ public:
 
     void addFieldData(const std::vector<Field> &fieldData, Direction direction);
 
-    std::vector<Field *> getFields() const;
+    const Field &getFieldRef(std::size_t idx) const;
+    Field &getFieldRef(std::size_t idx);
 
 private:
-    template <typename SkyIterator, typename FieldIterator>
-    bool hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                        FieldIterator fieldItBegin,
-                        FieldIterator fieldItEnd) const;
+    template <typename SkyIterator>
+    bool hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd) const;
 
-    template <typename NopesIterator, typename FieldIterator>
-    bool hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                  FieldIterator fieldItBegin, FieldIterator fieldItEnd) const;
+    template <typename NopesIterator>
+    bool hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd) const;
 
-    template <typename FieldDataIterator, typename FieldIterator>
+    template <typename FieldDataIterator>
     void addFieldData(FieldDataIterator fieldDataItBegin,
-                      FieldDataIterator fieldDataItEnd,
-                      FieldIterator fieldItBegin, FieldIterator fieldItEnd);
+                      FieldDataIterator fieldDataItEnd);
 
-    template <typename FieldIterator>
-    void insertFieldData(const FieldIterator &fieldIt, const Field &fieldData);
+    void insertFieldData(std::size_t idx, const Field &fieldData);
 
-    template <typename FieldIterator>
-    void insertSkyscraperNeighbourHandling(FieldIterator fieldIt,
-                                           int skyscraper);
+    void insertSkyscraperNeighbourHandling(std::size_t idx, int skyscraper);
 
-    template <typename FieldIterator>
-    void insertNopesNeighbourHandling(FieldIterator fieldIt, int nopes,
+    void insertNopesNeighbourHandling(std::size_t idx, int nopes,
                                       bool hadSkyscraperBefore);
-
-    int getIdx(std::vector<Field *>::const_iterator cit) const;
-    int getIdx(std::vector<Field *>::const_reverse_iterator crit) const;
-
-    std::vector<Field *> getRowFields(const ReadDirection &readDirection,
-                                      std::vector<Field> &boardFields,
-                                      std::size_t size,
-                                      const Point &startPoint);
 
     bool onlyOneFieldWithoutNope(int nope) const;
 
-    bool nopeExistsAsSkyscraperInFields(const std::vector<Field *> &rowFields,
-                                        int nope) const;
+    bool nopeExistsAsSkyscraperInFields(int nope) const;
 
     std::optional<int> nopeValueInAllButOneField() const;
 
@@ -86,8 +69,12 @@ private:
 
     bool hasSkyscraper(int skyscraper) const;
 
+    // Field &getFieldRef(std::size_t idx);
+
+    Board &mBoard;
+    Point mStartPoint;
+    ReadDirection mReadDirection;
     std::vector<Row *> mCrossingRows;
-    std::vector<Field *> mRowFields;
 };
 
 #endif

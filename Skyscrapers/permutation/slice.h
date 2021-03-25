@@ -18,18 +18,27 @@ class CluePair;
 class Slice {
 public:
     Slice(Permutations &permutations,
-          const std::vector<std::size_t> &permutationIndexes, Row &row);
+          const std::vector<std::size_t> &permutationIndexes, Row &row,
+          std::size_t size);
 
     void guessSkyscraperOutOfNeighbourNopes();
 
     bool isSolved() const;
 
-    void solveFromPossiblePermutations();
+    void solveFromPossiblePermutations(std::size_t size);
 
-    bool reducePossiblePermutations();
+    bool reducePossiblePermutations(std::size_t size);
 
 private:
-    std::vector<std::set<int>> getPossibleBuildings() const;
+    std::vector<std::set<int>> getPossibleBuildings(std::size_t size) const;
+
+    std::vector<Field> copyFields(std::size_t size) const;
+
+    bool fieldsIdentical(const std::vector<Field> &lastFields,
+                         std::size_t size) const;
+
+    bool isValidPermutation(const Span<int> &permutation,
+                            std::size_t size) const;
 
     std::vector<Field>
     getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
@@ -41,15 +50,8 @@ private:
 
 std::vector<Slice> makeSlices(Permutations &permutations,
                               std::vector<Row> &rows,
-                              const std::vector<CluePair> &cluePairs);
-
-std::vector<Field> copyField(const std::vector<Field *> &currFields);
-
-bool fieldsIdentical(const std::vector<Field> &lastFields,
-                     const std::vector<Field *> &currFields);
-
-bool isValidPermutation(const Span<int> &permutation,
-                        const std::vector<Field *> fields);
+                              const std::vector<CluePair> &cluePairs,
+                              std::size_t size);
 
 } // namespace permutation
 #endif

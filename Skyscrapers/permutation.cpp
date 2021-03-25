@@ -36,7 +36,7 @@ SolvePuzzle(const std::vector<int> &clues,
                               Span{&board.mRows[0], board.mRows.size()});
 
     std::vector<Slice> slices =
-        makeSlices(permutations, board.mRows, cluePairs);
+        makeSlices(permutations, board.mRows, cluePairs, boardSize);
 
     for (;;) {
         bool allFull = true;
@@ -44,7 +44,7 @@ SolvePuzzle(const std::vector<int> &clues,
             if (slices[i].isSolved()) {
                 continue;
             }
-            slices[i].solveFromPossiblePermutations();
+            slices[i].solveFromPossiblePermutations(boardSize);
             slices[i].guessSkyscraperOutOfNeighbourNopes();
 
             if (!slices[i].isSolved()) {
