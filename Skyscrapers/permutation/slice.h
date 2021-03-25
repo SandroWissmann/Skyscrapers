@@ -31,7 +31,7 @@ public:
 private:
     std::vector<std::set<int>> getPossibleBuildings() const;
 
-    FieldElements
+    std::vector<Field>
     getFieldElements(const std::vector<std::set<int>> &possibleBuildings);
 
     Permutations *mPermutations;

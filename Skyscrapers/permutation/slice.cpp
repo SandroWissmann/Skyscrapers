@@ -2,7 +2,6 @@
 
 #include "../shared/field.h"
 #include "../shared/row.h"
-#include "fieldelements.h"
 #include "permutations.h"
 
 namespace permutation {
@@ -19,22 +18,7 @@ Slice::Slice(Permutations &permutations,
     auto possibleBuildings = getPossibleBuildings();
     auto fieldElements = getFieldElements(possibleBuildings);
 
-    // ugly adaptor better turn field elements directly in to field collection
-    std::vector<Field> fields(fieldElements.skyscrapers.size());
-
-    for (std::size_t i = 0; i < fieldElements.skyscrapers.size(); ++i) {
-        if (fieldElements.skyscrapers[i] != 0) {
-            fields[i].insertSkyscraper(fieldElements.skyscrapers[i]);
-        }
-        else if (!fieldElements.nopes[i].empty()) {
-            fields[i].insertNopes(fieldElements.nopes[i]);
-        }
-    }
-
-    mRow->addFieldData(fields, Row::Direction::front);
-
-    // mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-    // mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+    mRow->addFieldData(fieldElements, Row::Direction::front);
 }
 
 void Slice::guessSkyscraperOutOfNeighbourNopes()
@@ -60,24 +44,7 @@ void Slice::solveFromPossiblePermutations()
         auto possibleBuildings = getPossibleBuildings();
         auto fieldElements = getFieldElements(possibleBuildings);
 
-        // ugly adaptor better turn field elements directly in to field
-        // collection
-        std::vector<Field> fields(fieldElements.skyscrapers.size());
-
-        for (std::size_t i = 0; i < fieldElements.skyscrapers.size(); ++i) {
-            if (fieldElements.skyscrapers[i] != 0) {
-                fields[i].insertSkyscraper(fieldElements.skyscrapers[i]);
-            }
-            else if (!fieldElements.nopes[i].empty()) {
-                fields[i].insertNopes(fieldElements.nopes[i]);
-            }
-        }
-
-        mRow->addFieldData(fields, Row::Direction::front);
-
-        // mRow->addSkyscrapers(fieldElements.skyscrapers,
-        // Row::Direction::front); mRow->addNopes(fieldElements.nopes,
-        // Row::Direction::front);
+        mRow->addFieldData(fieldElements, Row::Direction::front);
 
         if (fieldsIdentical(lastFields, mRow->getFields())) {
             break;
@@ -119,30 +86,26 @@ std::vector<std::set<int>> Slice::getPossibleBuildings() const
     return possibleBuildingsOnFields;
 }
 
-FieldElements
+std::vector<Field>
 Slice::getFieldElements(const std::vector<std::set<int>> &possibleBuildings)
 {
-    FieldElements fieldElements;
-    fieldElements.skyscrapers.reserve(possibleBuildings.size());
-    fieldElements.nopes.reserve(possibleBuildings.size());
+    std::vector<Field> fieldElements(possibleBuildings.size(), Field{});
 
     for (std::size_t i = 0; i < possibleBuildings.size(); ++i) {
         if (possibleBuildings[i].size() == 1) {
-            fieldElements.skyscrapers.emplace_back(
-                *possibleBuildings[i].begin());
-            fieldElements.nopes.emplace_back(std::vector<int>{});
+            fieldElements[i].insertSkyscraper(*possibleBuildings[i].begin());
         }
         else {
             std::vector<int> nopes;
             nopes.reserve(possibleBuildings.size());
             for (std::size_t j = 0; j < possibleBuildings.size(); ++j) {
                 auto it = possibleBuildings[i].find(j + 1);
+
                 if (it == possibleBuildings[i].end()) {
                     nopes.emplace_back(j + 1);
                 }
             }
-            fieldElements.skyscrapers.emplace_back(0);
-            fieldElements.nopes.emplace_back(nopes);
+            fieldElements[i].insertNopes(nopes);
         }
     }
     return fieldElements;

@@ -24,7 +24,6 @@ add_executable(Skyscrapers
     permutation/cluepair.cpp
     permutation/permutations.h
     permutation/permutations.cpp
-    permutation/fieldelements.h
     permutation/slice.h
     permutation/slice.cpp
     backtracking.h
