@@ -7,12 +7,12 @@
 #include <string>
 #include <vector>
 
-class ClueHints;
+class RowClues;
 
 struct Board {
     Board(std::size_t size);
 
-    void insert(const std::vector<ClueHints> &clueHints);
+    void insert(const std::vector<RowClues> &rowClues);
 
     void insert(const std::vector<std::vector<int>> &startingSkyscrapers);
 

@@ -22,19 +22,19 @@ bool rowsAreValid(const std::vector<Field> &fields, std::size_t index,
 bool columnsAreValid(const std::vector<Field> &fields, std::size_t index,
                      std::size_t rowSize);
 
-bool rowCluesAreValid(const std::vector<Field> &fields,
-                      const std::vector<int> &clues, std::size_t index,
-                      std::size_t rowSize);
+bool cluesInRowAreValid(const std::vector<Field> &fields,
+                        const std::vector<int> &clues, std::size_t index,
+                        std::size_t rowSize);
 
-std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t row,
-                                 std::size_t rowSize);
+std::tuple<int, int> getCluesInRow(const std::vector<int> &clues,
+                                   std::size_t row, std::size_t rowSize);
 
-bool columnCluesAreValid(const std::vector<Field> &fields,
-                         const std::vector<int> &clues, std::size_t index,
-                         std::size_t rowSize);
+bool cluesInColumnAreValid(const std::vector<Field> &fields,
+                           const std::vector<int> &clues, std::size_t index,
+                           std::size_t rowSize);
 
-std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
-                                    std::size_t column, std::size_t rowSize);
+std::tuple<int, int> getCluesInColumn(const std::vector<int> &clues,
+                                      std::size_t column, std::size_t rowSize);
 
 template <typename FieldIterator>
 int visibleBuildings(FieldIterator begin, FieldIterator end,

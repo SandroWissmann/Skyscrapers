@@ -19,7 +19,7 @@ Row::Row(Board &board, const Point &startPoint,
 void Row::addCrossingRows(Row *crossingRow)
 {
     assert(crossingRow != nullptr);
-    assert(mCrossingRows.size() < size());
+    assert(mCrossingRows.size() < mBoard.size());
     mCrossingRows.push_back(crossingRow);
 }
 

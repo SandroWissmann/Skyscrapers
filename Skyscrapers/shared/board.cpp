@@ -1,7 +1,7 @@
 #include "board.h"
 
 #include "borderiterator.h"
-#include "cluehints.h"
+#include "rowclues.h"
 
 #include <algorithm>
 #include <cassert>
@@ -15,15 +15,15 @@ Board::Board(std::size_t size)
     makeRows();
 }
 
-void Board::insert(const std::vector<ClueHints> &clueHints)
+void Board::insert(const std::vector<RowClues> &rowClues)
 {
     assert(clueHints.size() == mRows.size());
 
-    for (std::size_t i = 0; i < clueHints.size(); ++i) {
-        if (clueHints[i].isEmpty()) {
+    for (std::size_t i = 0; i < rowClues.size(); ++i) {
+        if (rowClues[i].isEmpty()) {
             continue;
         }
-        mRows[i].addFieldData(clueHints[i].fields, Row::Direction::front);
+        mRows[i].addFieldData(rowClues[i].fields, Row::Direction::front);
     }
 }
 

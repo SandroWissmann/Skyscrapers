@@ -2,7 +2,7 @@
 
 #include "backtracking/algorithm.h"
 #include "shared/board.h"
-#include "shared/cluehints.h"
+#include "shared/rowclues.h"
 
 #include <algorithm>
 #include <cassert>
@@ -18,11 +18,11 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::size_t boardSize = clues.size() / 4;
 
-    auto clueHints = getClueHints(clues, boardSize);
+    auto rowClues = getRowClues(clues, boardSize);
 
     Board board{boardSize};
 
-    board.insert(clueHints);
+    board.insert(rowClues);
     board.insert(startingGrid);
 
     if (board.isSolved()) {

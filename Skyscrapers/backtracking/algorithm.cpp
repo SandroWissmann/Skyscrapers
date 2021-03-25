@@ -7,11 +7,18 @@
 #include <iostream>
 
 namespace backtracking {
+
+// int count = 0;
+
 bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
                       std::size_t index, std::size_t countOfElements,
                       std::size_t rowSize)
 {
+    // debug_print(board);
+    //++count;
     if (index == countOfElements) {
+        // std::cout << count << '\n';
+        // count = 0;
         return true;
     }
 
@@ -60,10 +67,10 @@ bool skyscrapersAreValidPositioned(const std::vector<Field> &fields,
     if (!columnsAreValid(fields, index, rowSize)) {
         return false;
     }
-    if (!rowCluesAreValid(fields, clues, index, rowSize)) {
+    if (!cluesInRowAreValid(fields, clues, index, rowSize)) {
         return false;
     }
-    if (!columnCluesAreValid(fields, clues, index, rowSize)) {
+    if (!cluesInColumnAreValid(fields, clues, index, rowSize)) {
         return false;
     }
     return true;
@@ -104,13 +111,13 @@ bool columnsAreValid(const std::vector<Field> &fields, std::size_t index,
     return true;
 }
 
-bool rowCluesAreValid(const std::vector<Field> &fields,
-                      const std::vector<int> &clues, std::size_t index,
-                      std::size_t rowSize)
+bool cluesInRowAreValid(const std::vector<Field> &fields,
+                        const std::vector<int> &clues, std::size_t index,
+                        std::size_t rowSize)
 {
     std::size_t row = index / rowSize;
 
-    auto [frontClue, backClue] = getRowClues(clues, row, rowSize);
+    auto [frontClue, backClue] = getCluesInRow(clues, row, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
@@ -151,21 +158,21 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     return true;
 }
 
-std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t row,
-                                 std::size_t rowSize)
+std::tuple<int, int> getCluesInRow(const std::vector<int> &clues,
+                                   std::size_t row, std::size_t rowSize)
 {
     int frontClue = clues[clues.size() - 1 - row];
     int backClue = clues[rowSize + row];
     return {frontClue, backClue};
 }
 
-bool columnCluesAreValid(const std::vector<Field> &fields,
-                         const std::vector<int> &clues, std::size_t index,
-                         std::size_t rowSize)
+bool cluesInColumnAreValid(const std::vector<Field> &fields,
+                           const std::vector<int> &clues, std::size_t index,
+                           std::size_t rowSize)
 {
     std::size_t column = index % rowSize;
 
-    auto [frontClue, backClue] = getColumnClues(clues, column, rowSize);
+    auto [frontClue, backClue] = getCluesInColumn(clues, column, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
@@ -206,8 +213,8 @@ bool columnCluesAreValid(const std::vector<Field> &fields,
     return true;
 }
 
-std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
-                                    std::size_t column, std::size_t rowSize)
+std::tuple<int, int> getCluesInColumn(const std::vector<int> &clues,
+                                      std::size_t column, std::size_t rowSize)
 {
     int frontClue = clues[column];
     int backClue = clues[rowSize * 3 - 1 - column];
