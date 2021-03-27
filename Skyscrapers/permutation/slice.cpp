@@ -101,7 +101,7 @@ std::vector<Field> Slice::copyFields(std::size_t size) const
 bool Slice::fieldsIdentical(const std::vector<Field> &lastFields,
                             std::size_t size) const
 {
-    assert(lastFields.size == size);
+    assert(lastFields.size() == size);
 
     for (std::size_t idx = 0; idx < size; ++idx) {
         if (lastFields[idx].bitmask() != mRow->getFieldRef(idx).bitmask()) {

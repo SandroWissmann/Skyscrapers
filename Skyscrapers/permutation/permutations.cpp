@@ -88,8 +88,6 @@ int factorial(int n)
 bool Permutations::existingSkyscrapersInPermutation(
     std::size_t rowIdx, const std::vector<int> &permutation)
 {
-    assert(fields.size() == permutation.size());
-
     for (std::size_t idx = 0; idx < permutation.size(); ++idx) {
         if (!mRows[rowIdx].getFieldRef(idx).hasSkyscraper()) {
             continue;

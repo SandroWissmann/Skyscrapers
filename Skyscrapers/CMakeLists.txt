@@ -11,8 +11,8 @@ add_executable(Skyscrapers
     shared/readdirection.cpp
     shared/borderiterator.h
     shared/borderiterator.cpp
-    shared/cluehints.h
-    shared/cluehints.cpp
+    shared/rowclues.h
+    shared/rowclues.cpp
     shared/row.h
     shared/row.cpp
     shared/board.h

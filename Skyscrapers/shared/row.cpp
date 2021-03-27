@@ -51,7 +51,8 @@ void Row::addLastMissingSkyscraper()
     auto missingValue =
         missingNumberInSequence(sequence.begin(), sequence.end());
 
-    assert(missingValue >= 0 && missingValue <= static_cast<int>(size()));
+    assert(missingValue >= 0 &&
+           missingValue <= static_cast<int>(mBoard.size()));
 
     (getFieldRef(nopeFieldIdx)).insertSkyscraper(missingValue);
     insertSkyscraperNeighbourHandling(nopeFieldIdx, missingValue);

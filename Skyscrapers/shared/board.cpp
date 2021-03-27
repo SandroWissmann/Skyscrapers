@@ -17,7 +17,7 @@ Board::Board(std::size_t size)
 
 void Board::insert(const std::vector<RowClues> &rowClues)
 {
-    assert(clueHints.size() == mRows.size());
+    assert(rowClues.size() == mRows.size());
 
     for (std::size_t i = 0; i < rowClues.size(); ++i) {
         if (rowClues[i].isEmpty()) {
