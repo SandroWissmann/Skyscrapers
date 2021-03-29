@@ -185,179 +185,166 @@ template <typename It> int missingNumberInSequence(It begin, It end)
     return projectedSum - actualSum;
 }
 
-class Nopes {
+using BitmaskType = std::uint32_t;
+
+/*
+Example size = 4
+
+b0000 0 Nopes = {}
+b0001 1 Nopes = 1
+b0010 2 Nopes = 2
+b0011 3 Nopes = 1, 2
+b0100 4 Nopes = 3
+b0101 5 Nopes = 1, 3
+b0110 6 Nopes = 2, 3
+b0111 7 Skyscraper = 4
+b1000 8 Nopes = 4
+b1001 9 Nopes = 1, 4
+b1010 10 Nopes = 2, 4
+b1011 11 Skyscraper = 3
+b1100 12 Nopes = 3, 4
+b1101 13 Skyscraper
+b1110 14 Skyscraper = 1
+b1111 15 Invalid all nope
+*/
+
+class Field {
 public:
-    Nopes(int size);
+    Field(std::size_t size);
 
-    void insert(int value);
-    void insert(const std::vector<int> &values);
-    bool sizeReached() const;
-    int missingNumberInSequence() const;
+    void insertSkyscraper(int skyscraper);
+    void insertNope(int nope);
+    void insertNopes(const std::vector<int> &nopes);
 
-    bool contains(int value) const;
-    bool contains(const std::vector<int> &values);
+    int skyscraper() const;
+    std::vector<int> nopes() const;
 
-    bool isEmpty() const;
-    void clear();
+    bool hasSkyscraper() const;
 
-    std::vector<int> containing() const;
+    bool containsNope(int value) const;
+    bool containsNopes(const std::vector<int> &values);
 
-    // for debug print
-    std::unordered_set<int> values() const;
+    BitmaskType bitmask() const;
+    void setBitmask(BitmaskType bitmask);
 
 private:
-    int mSize;
-    std::unordered_set<int> mValues;
+    bool bitIsToggled(BitmaskType bitmask, int bit) const;
+
+    BitmaskType mBitmask{0};
+    std::size_t mSize;
+
+    friend inline bool operator==(const Field &lhs, const Field &rhs);
+    friend inline bool operator!=(const Field &lhs, const Field &rhs);
 };
 
-Nopes::Nopes(int size) : mSize{size}
+inline bool operator==(const Field &lhs, const Field &rhs)
 {
-    assert(size > 0);
+    return lhs.mBitmask == rhs.mBitmask;
+}
+inline bool operator!=(const Field &lhs, const Field &rhs)
+{
+    return !(lhs == rhs);
 }
 
-void Nopes::insert(int value)
+Field::Field(std::size_t size) : mSize{size}
 {
-    assert(value >= 1 && value <= mSize + 1);
-    mValues.insert(value);
 }
 
-void Nopes::insert(const std::vector<int> &values)
+void Field::insertSkyscraper(int skyscraper)
 {
-    mValues.insert(values.begin(), values.end());
+    assert(skyscraper > 0 && skyscraper <= static_cast<int>(mSize));
+    BitmaskType mask = 1;
+    for (int i = 0; i < static_cast<int>(mSize); ++i) {
+        if (i != skyscraper - 1) {
+            mBitmask |= mask;
+        }
+        mask <<= 1;
+    }
 }
 
-bool Nopes::sizeReached() const
+void Field::insertNope(int nope)
 {
-    return mValues.size() == static_cast<std::size_t>(mSize);
+    assert(nope > 0 && nope <= static_cast<int>(mSize));
+    mBitmask |= 1 << (nope - 1);
 }
 
-int Nopes::missingNumberInSequence() const
+void Field::insertNopes(const std::vector<int> &nopes)
 {
-    assert(sizeReached());
-    return codewarsbacktracking::missingNumberInSequence(mValues.begin(),
-                                                         mValues.end());
+    for (const auto nope : nopes) {
+        insertNope(nope);
+    }
 }
 
-bool Nopes::contains(int value) const
+int Field::skyscraper() const
 {
-    auto it = mValues.find(value);
-    return it != mValues.end();
+    if (!hasSkyscraper()) {
+        return 0;
+    }
+
+    for (std::size_t i = 0; i < mSize; ++i) {
+        if (!(bitIsToggled(mBitmask, i))) {
+            return i + 1;
+        }
+    }
+    return 0;
 }
 
-bool Nopes::contains(const std::vector<int> &values)
+std::vector<int> Field::nopes() const
+{
+    std::vector<int> nopes;
+    nopes.reserve(mSize - 1);
+    for (std::size_t i = 0; i < mSize; ++i) {
+        if (bitIsToggled(mBitmask, i)) {
+            nopes.emplace_back(i + 1);
+        }
+    }
+    return nopes;
+}
+
+bool Field::hasSkyscraper() const
+{
+    bool foundZero = false;
+    for (std::size_t i = 0; i < mSize; ++i) {
+        if (!(bitIsToggled(mBitmask, i))) {
+            if (!foundZero) {
+                foundZero = true;
+            }
+            else { // found more than one zero so no skyscraper present
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool Field::containsNope(int value) const
+{
+    return bitIsToggled(mBitmask, value - 1);
+}
+
+bool Field::containsNopes(const std::vector<int> &values)
 {
     for (const auto &value : values) {
-        if (!contains(value)) {
+        if (!containsNope(value)) {
             return false;
         }
     }
     return true;
 }
 
-bool Nopes::isEmpty() const
+BitmaskType Field::bitmask() const
 {
-    return mValues.empty();
+    return mBitmask;
 }
 
-void Nopes::clear()
+void Field::setBitmask(BitmaskType bitmask)
 {
-    mValues.clear();
+    mBitmask = bitmask;
 }
 
-std::vector<int> Nopes::containing() const
+bool Field::bitIsToggled(BitmaskType bitmask, int bit) const
 {
-    std::vector<int> nopes;
-    nopes.reserve(mValues.size());
-    for (const auto &value : mValues) {
-        nopes.emplace_back(value);
-    }
-    return nopes;
-}
-
-std::unordered_set<int> Nopes::values() const
-{
-    return mValues;
-}
-
-class Field {
-public:
-    Field(int &skyscraper, Nopes &nopes);
-
-    void insertSkyscraper(int skyscraper);
-    void insertNope(int nope);
-    void insertNopes(const std::vector<int> &nopes);
-
-    bool fullOfNopes() const;
-
-    int skyscraper() const;
-    Nopes nopes() const;
-
-    bool hasSkyscraper() const;
-
-    std::optional<int> lastMissingNope() const;
-
-private:
-    int &mSkyscraper;
-    Nopes &mNopes;
-    bool mHasSkyscraper = false;
-};
-
-Field::Field(int &skyscraper, Nopes &nopes)
-    : mSkyscraper{skyscraper}, mNopes{nopes}
-{
-}
-
-void Field::insertSkyscraper(int skyscraper)
-{
-    assert(mSkyscraper == 0 || skyscraper == mSkyscraper);
-    if (mHasSkyscraper) {
-        return;
-    }
-    mSkyscraper = skyscraper;
-    mHasSkyscraper = true;
-
-    mNopes.clear();
-}
-void Field::insertNope(int nope)
-{
-    if (mHasSkyscraper) {
-        return;
-    }
-    mNopes.insert(nope);
-}
-void Field::insertNopes(const std::vector<int> &nopes)
-{
-    if (mHasSkyscraper) {
-        return;
-    }
-    mNopes.insert(nopes);
-}
-
-bool Field::fullOfNopes() const
-{
-    return mNopes.sizeReached();
-}
-
-int Field::skyscraper() const
-{
-    return mSkyscraper;
-}
-Nopes Field::nopes() const
-{
-    return mNopes;
-}
-
-bool Field::hasSkyscraper() const
-{
-    return mHasSkyscraper;
-}
-
-std::optional<int> Field::lastMissingNope() const
-{
-    if (!mNopes.sizeReached()) {
-        return {};
-    }
-    return mNopes.missingNumberInSequence();
+    return bitmask & (1 << bit);
 }
 
 struct Point {
@@ -407,7 +394,7 @@ void advanceToNextPosition(Point &point, ReadDirection readDirection,
 
 class Row {
 public:
-    Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
+    Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
         const ReadDirection &readDirection);
 
     void insertSkyscraper(int pos, int skyscraper);
@@ -472,10 +459,15 @@ private:
     int getIdx(std::vector<Field *>::const_reverse_iterator crit) const;
 
     std::vector<Field *> getRowFields(const ReadDirection &readDirection,
-                                      std::vector<std::vector<Field>> &fields,
+                                      std::vector<Field> &boardFields,
+                                      std::size_t size,
                                       const Point &startPoint);
 
     bool onlyOneFieldWithoutNope(int nope) const;
+
+    bool nopeExistsAsSkyscraperInFields(const std::vector<Field *> &rowFields,
+                                        int nope) const;
+
     std::optional<int> nopeValueInAllButOneField() const;
 
     void insertSkyscraperToFirstFieldWithoutNope(int nope);
@@ -486,9 +478,9 @@ private:
     std::vector<Field *> mRowFields;
 };
 
-Row::Row(std::vector<std::vector<Field>> &fields, const Point &startPoint,
+Row::Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
          const ReadDirection &readDirection)
-    : mRowFields{getRowFields(readDirection, fields, startPoint)}
+    : mRowFields{getRowFields(readDirection, fields, size, startPoint)}
 {
 }
 
@@ -535,8 +527,10 @@ void Row::addLastMissingSkyscraper()
     }
     assert(nopeFieldIt != mRowFields.end());
     assert(skyscraperCount() == static_cast<int>(sequence.size()));
+
     auto missingValue =
         missingNumberInSequence(sequence.begin(), sequence.end());
+
     assert(missingValue >= 0 && missingValue <= static_cast<int>(size()));
     insertSkyscraper(nopeFieldIt, missingValue);
 }
@@ -571,7 +565,10 @@ int Row::nopeCount(int nope) const
 {
     int count = 0;
     for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if ((*cit)->nopes().contains(nope)) {
+        if ((*cit)->hasSkyscraper()) {
+            continue;
+        }
+        if ((*cit)->containsNope(nope)) {
             ++count;
         }
     }
@@ -673,7 +670,7 @@ bool Row::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
         if ((*fieldIt)->hasSkyscraper()) {
             return false;
         }
-        if (!(*fieldIt)->nopes().contains(*nopesIt)) {
+        if (!(*fieldIt)->containsNopes(*nopesIt)) {
             return false;
         }
     }
@@ -738,14 +735,17 @@ void Row::insertNope(FieldIterator fieldIt, int nope)
     if ((*fieldIt)->hasSkyscraper()) {
         return;
     }
-    if ((*fieldIt)->nopes().contains(nope)) {
+    if ((*fieldIt)->containsNope(nope)) {
         return;
     }
+
+    bool hasSkyscraperBefore = (*fieldIt)->hasSkyscraper();
     (*fieldIt)->insertNope(nope);
 
-    auto optlastMissingNope = (*fieldIt)->lastMissingNope();
-    if (optlastMissingNope) {
-        insertSkyscraper(fieldIt, *optlastMissingNope);
+    // skyscraper was added so we have to add nopes to the neighbours
+    // probaly could insert only nopes directly
+    if (!hasSkyscraperBefore && (*fieldIt)->hasSkyscraper()) {
+        insertSkyscraper(fieldIt, (*fieldIt)->skyscraper());
     }
 
     if (onlyOneFieldWithoutNope(nope)) {
@@ -777,22 +777,25 @@ int Row::getIdx(std::vector<Field *>::const_reverse_iterator crit) const
     return size() - std::distance(mRowFields.crbegin(), crit) - 1;
 }
 
-std::vector<Field *>
-Row::getRowFields(const ReadDirection &readDirection,
-                  std::vector<std::vector<Field>> &boardFields,
-                  const Point &startPoint)
+std::vector<Field *> Row::getRowFields(const ReadDirection &readDirection,
+                                       std::vector<Field> &boardFields,
+                                       std::size_t size,
+                                       const Point &startPoint)
 {
     std::vector<Field *> fields;
-    fields.reserve(boardFields.size());
+    fields.reserve(size);
     std::size_t x = startPoint.x;
     std::size_t y = startPoint.y;
-    for (std::size_t i = 0; i < boardFields.size(); ++i) {
-        fields.emplace_back(&boardFields[y][x]);
 
-        if (readDirection == ReadDirection::topToBottom) {
+    if (readDirection == ReadDirection::topToBottom) {
+        for (std::size_t i = 0; i < size; ++i) {
+            fields.emplace_back(&boardFields[x + y * size]);
             ++y;
         }
-        else {
+    }
+    else { // ReadDirection::rightToLeft
+        for (std::size_t i = 0; i < size; ++i) {
+            fields.emplace_back(&boardFields[x + y * size]);
             --x;
         }
     }
@@ -801,10 +804,7 @@ Row::getRowFields(const ReadDirection &readDirection,
 
 bool Row::onlyOneFieldWithoutNope(int nope) const
 {
-    auto cit = std::find_if(
-        mRowFields.cbegin(), mRowFields.cend(),
-        [nope](const auto &field) { return field->skyscraper() == nope; });
-    if (cit != mRowFields.cend()) {
+    if (nopeExistsAsSkyscraperInFields(mRowFields, nope)) {
         return false;
     }
     if (nopeCount(nope) < static_cast<int>(size()) - skyscraperCount() - 1) {
@@ -813,13 +813,22 @@ bool Row::onlyOneFieldWithoutNope(int nope) const
     return true;
 }
 
+bool Row::nopeExistsAsSkyscraperInFields(const std::vector<Field *> &rowFields,
+                                         int nope) const
+{
+    auto cit = std::find_if(
+        rowFields.cbegin(), rowFields.cend(),
+        [nope](const auto &field) { return field->skyscraper() == nope; });
+    return cit != rowFields.cend();
+}
+
 std::optional<int> Row::nopeValueInAllButOneField() const
 {
     std::unordered_map<int, int> nopeAndCount;
 
     for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
         if (!(*cit)->hasSkyscraper()) {
-            auto nopes = (*cit)->nopes().containing();
+            auto nopes = (*cit)->nopes();
             for (const auto &nope : nopes) {
                 if (hasSkyscraper(nope)) {
                     continue;
@@ -842,7 +851,7 @@ void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
         if ((*it)->hasSkyscraper()) {
             continue;
         }
-        if (!(*it)->nopes().contains(nope)) {
+        if (!(*it)->containsNope(nope)) {
             insertSkyscraper(it, nope);
             return; // there can be max one skyscraper per row;
         }
@@ -912,27 +921,24 @@ struct Board {
 
     bool isSolved() const;
 
-    std::vector<std::vector<int>> skyscrapers{};
-    std::vector<std::vector<Nopes>> nopes;
+    std::vector<Field> fields;
 
     std::vector<Row> mRows;
 
-private:
-    std::vector<std::vector<int>> makeSkyscrapers(std::size_t size);
-    std::vector<std::vector<Nopes>> makeNopes(std::size_t size);
+    std::vector<std::vector<int>> skyscrapers2d() const;
 
-    void makeFields();
+    std::size_t size() const;
+
+private:
     void makeRows();
     void connnectRowsWithCrossingRows();
 
-    std::vector<std::vector<Field>> mFields;
+    std::size_t mSize;
 };
 
 Board::Board(std::size_t size)
-    : skyscrapers{makeSkyscrapers(size)}, nopes{makeNopes(size)},
-      mFields{std::vector<std::vector<Field>>(skyscrapers.size())}
+    : fields{std::vector<Field>(size * size, Field{size})}, mSize{size}
 {
-    makeFields();
     makeRows();
 }
 
@@ -957,6 +963,7 @@ void Board::insert(const std::vector<std::vector<int>> &startingSkyscrapers)
     }
     std::size_t boardSize = mRows.size() / 2;
     assert(startingSkyscrapers.size() == boardSize);
+
     for (std::size_t i = 0; i < startingSkyscrapers.size(); ++i) {
         mRows[i + boardSize].addSkyscrapers(startingSkyscrapers[i],
                                             Row::Direction::back);
@@ -974,41 +981,36 @@ bool Board::isSolved() const
     return true;
 }
 
-std::vector<std::vector<int>> Board::makeSkyscrapers(std::size_t size)
+std::vector<std::vector<int>> Board::skyscrapers2d() const
 {
-    std::vector<int> skyscraperRow(size, 0);
-    return std::vector<std::vector<int>>(size, skyscraperRow);
-}
+    std::vector<std::vector<int>> skyscrapers2d(mSize, std::vector<int>());
 
-std::vector<std::vector<Nopes>> Board::makeNopes(std::size_t size)
-{
-    std::vector<Nopes> nopesRow(size, Nopes{static_cast<int>(size) - 1});
-    return std::vector<std::vector<Nopes>>(size, nopesRow);
-}
-
-void Board::makeFields()
-{
-    mFields.reserve(skyscrapers.size());
-    for (auto &row : mFields) {
-        row.reserve(mFields.size());
-    }
-    for (std::size_t y = 0; y < skyscrapers.size(); ++y) {
-        mFields[y].reserve(skyscrapers.size());
-        for (std::size_t x = 0; x < skyscrapers[y].size(); ++x) {
-            mFields[y].emplace_back(Field{skyscrapers[y][x], nopes[y][x]});
+    std::size_t j = 0;
+    skyscrapers2d[j].reserve(mSize);
+    for (std::size_t i = 0; i < fields.size(); ++i) {
+        if (i != 0 && i % mSize == 0) {
+            ++j;
+            skyscrapers2d[j].reserve(mSize);
         }
+        skyscrapers2d[j].emplace_back(fields[i].skyscraper());
     }
+    return skyscrapers2d;
+}
+
+std::size_t Board::size() const
+{
+    return mSize;
 }
 
 void Board::makeRows()
 {
-    BorderIterator borderIterator{mFields.size()};
+    BorderIterator borderIterator{mSize};
 
-    std::size_t size = mFields.size() * 2;
-    mRows.reserve(size);
+    std::size_t rowSize = mSize * 2;
+    mRows.reserve(rowSize);
 
-    for (std::size_t i = 0; i < size; ++i, ++borderIterator) {
-        mRows.emplace_back(Row{mFields, borderIterator.point(),
+    for (std::size_t i = 0; i < rowSize; ++i, ++borderIterator) {
+        mRows.emplace_back(Row{fields, mSize, borderIterator.point(),
                                borderIterator.readDirection()});
     }
     connnectRowsWithCrossingRows();
@@ -1036,109 +1038,134 @@ void Board::connnectRowsWithCrossingRows()
 void debug_print(Board &board, const std::string &title)
 {
     std::cout << title << '\n';
-    for (std::size_t y = 0; y < board.skyscrapers.size(); ++y) {
-        for (std::size_t x = 0; x < board.skyscrapers[y].size(); ++x) {
 
-            if (board.skyscrapers[y][x] != 0) {
-                std::cout << std::setw(board.skyscrapers.size() * 2);
-                std::cout << "V" + std::to_string(board.skyscrapers[y][x]);
-            }
-            else if (board.skyscrapers[y][x] == 0 &&
-                     !board.nopes[y][x].isEmpty()) {
-                auto nopes_set = board.nopes[y][x].values();
-                std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
-                std::sort(nopes.begin(), nopes.end());
+    for (std::size_t i = 0; i < board.fields.size(); ++i) {
 
-                std::string nopesStr;
-                for (std::size_t i = 0; i < nopes.size(); ++i) {
-                    nopesStr.append(std::to_string(nopes[i]));
-                    if (i != nopes.size() - 1) {
-                        nopesStr.push_back(',');
-                    }
-                }
-                std::cout << std::setw(board.skyscrapers.size() * 2);
-                std::cout << nopesStr;
-            }
-            else {
-                std::cout << ' ';
-            }
+        if (i % board.size() == 0 && i != 0) {
+            std::cout << '\n';
         }
-        std::cout << '\n';
+
+        if (board.fields[i].skyscraper() != 0) {
+            std::cout << std::setw(board.size() * 2);
+            std::cout << "V" + std::to_string(board.fields[i].skyscraper());
+        }
+        else if (board.fields[i].skyscraper() == 0 &&
+                 !board.fields[i].nopes().empty()) {
+            auto nopes_set = board.fields[i].nopes();
+            std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
+            std::sort(nopes.begin(), nopes.end());
+
+            std::string nopesStr;
+            for (std::size_t i = 0; i < nopes.size(); ++i) {
+                nopesStr.append(std::to_string(nopes[i]));
+                if (i != nopes.size() - 1) {
+                    nopesStr.push_back(',');
+                }
+            }
+            std::cout << std::setw(board.size() * 2);
+            std::cout << nopesStr;
+        }
+        else {
+            std::cout << ' ';
+        }
     }
     std::cout << '\n';
 }
 
-template <typename Iterator> int visibleBuildings(Iterator begin, Iterator end)
+template <typename FieldIterator>
+int visibleBuildings(FieldIterator begin, FieldIterator end)
 {
     int visibleBuildingsCount = 0;
     int highestSeen = 0;
     for (auto it = begin; it != end; ++it) {
-        if (*it != 0 && *it > highestSeen) {
+        if (it->skyscraper() != 0 && it->skyscraper() > highestSeen) {
             ++visibleBuildingsCount;
-            highestSeen = *it;
+            highestSeen = it->skyscraper();
         }
     }
     return visibleBuildingsCount;
 }
 
-bool rowsAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                  std::size_t x, std::size_t y, std::size_t size)
+bool rowsAreValid(const std::vector<Field> &fields, std::size_t index,
+                  std::size_t rowSize)
 {
-    for (std::size_t xi = 0; xi < size; xi++) {
-        if (xi != x && skyscrapers[y][xi] == skyscrapers[y][x]) {
+    std::size_t row = index / rowSize;
+    for (std::size_t currIndex = row * rowSize; currIndex < (row + 1) * rowSize;
+         ++currIndex) {
+        if (currIndex == index) {
+            continue;
+        }
+        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
             return false;
         }
     }
     return true;
 }
 
-bool columnsAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                     std::size_t x, std::size_t y, std::size_t size)
+bool columnsAreValid(const std::vector<Field> &fields, std::size_t index,
+                     std::size_t rowSize)
 {
-    for (std::size_t yi = 0; yi < size; yi++) {
-        if (yi != y && skyscrapers[yi][x] == skyscrapers[y][x]) {
+    std::size_t column = index % rowSize;
+
+    for (std::size_t i = 0; i < rowSize; ++i) {
+        std::size_t currIndex = column + i * rowSize;
+        if (currIndex == index) {
+            continue;
+        }
+        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
             return false;
         }
     }
     return true;
 }
 
-std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t y,
-                                 std::size_t size)
+std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t row,
+                                 std::size_t rowSize)
 {
-    int frontClue = clues[clues.size() - 1 - y];
-    int backClue = clues[size + y];
+    int frontClue = clues[clues.size() - 1 - row];
+    int backClue = clues[rowSize + row];
     return {frontClue, backClue};
 }
 
-bool rowCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                      const std::vector<int> &clues, std::size_t y,
-                      std::size_t size)
+bool rowCluesAreValid(const std::vector<Field> &fields,
+                      const std::vector<int> &clues, std::size_t index,
+                      std::size_t rowSize)
 {
-    auto [frontClue, backClue] = getRowClues(clues, y, size);
+    std::size_t row = index / rowSize;
+
+    auto [frontClue, backClue] = getRowClues(clues, row, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
     }
 
-    bool rowIsFull = std::find(skyscrapers[y].cbegin(), skyscrapers[y].cend(),
-                               0) == skyscrapers[y].cend();
+    std::size_t rowIndexBegin = row * rowSize;
+    std::size_t rowIndexEnd = (row + 1) * rowSize;
+
+    auto citBegin = fields.cbegin() + rowIndexBegin;
+    auto citEnd = fields.cbegin() + rowIndexEnd;
+
+    bool rowIsFull = std::find_if(citBegin, citEnd, [](const Field &field) {
+                         return !field.hasSkyscraper();
+                     }) == citEnd;
 
     if (!rowIsFull) {
         return true;
     }
 
     if (frontClue != 0) {
-        auto frontVisible =
-            visibleBuildings(skyscrapers[y].cbegin(), skyscrapers[y].cend());
+        auto frontVisible = visibleBuildings(citBegin, citEnd);
 
         if (frontClue != frontVisible) {
             return false;
         }
     }
+
+    auto critBegin = std::make_reverse_iterator(citEnd);
+    auto critEnd = std::make_reverse_iterator(citBegin);
+
     if (backClue != 0) {
-        auto backVisible =
-            visibleBuildings(skyscrapers[y].crbegin(), skyscrapers[y].crend());
+        auto backVisible = visibleBuildings(critBegin, critEnd);
 
         if (backClue != backVisible) {
             return false;
@@ -1155,41 +1182,45 @@ std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
     return {frontClue, backClue};
 }
 
-bool columnCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
-                         const std::vector<int> &clues, std::size_t x,
-                         std::size_t size)
+bool columnCluesAreValid(const std::vector<Field> &fields,
+                         const std::vector<int> &clues, std::size_t index,
+                         std::size_t rowSize)
 {
-    auto [frontClue, backClue] = getColumnClues(clues, x, size);
+    std::size_t column = index % rowSize;
+
+    auto [frontClue, backClue] = getColumnClues(clues, column, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
     }
 
-    std::vector<int> verticalSkyscrapers;
-    verticalSkyscrapers.reserve(size);
+    std::vector<Field> verticalFields;
+    verticalFields.reserve(rowSize);
 
-    for (std::size_t yi = 0; yi < size; ++yi) {
-        verticalSkyscrapers.emplace_back(skyscrapers[yi][x]);
+    for (std::size_t i = 0; i < rowSize; ++i) {
+        verticalFields.emplace_back(fields[column + i * rowSize]);
     }
 
     bool columnIsFull =
-        std::find(verticalSkyscrapers.cbegin(), verticalSkyscrapers.cend(),
-                  0) == verticalSkyscrapers.cend();
+        std::find_if(verticalFields.cbegin(), verticalFields.cend(),
+                     [](const Field &field) {
+                         return !field.hasSkyscraper();
+                     }) == verticalFields.cend();
 
     if (!columnIsFull) {
         return true;
     }
 
     if (frontClue != 0) {
-        auto frontVisible = visibleBuildings(verticalSkyscrapers.cbegin(),
-                                             verticalSkyscrapers.cend());
+        auto frontVisible =
+            visibleBuildings(verticalFields.cbegin(), verticalFields.cend());
         if (frontClue != frontVisible) {
             return false;
         }
     }
     if (backClue != 0) {
-        auto backVisible = visibleBuildings(verticalSkyscrapers.crbegin(),
-                                            verticalSkyscrapers.crend());
+        auto backVisible =
+            visibleBuildings(verticalFields.crbegin(), verticalFields.crend());
 
         if (backClue != backVisible) {
             return false;
@@ -1198,66 +1229,65 @@ bool columnCluesAreValid(const std::vector<std::vector<int>> &skyscrapers,
     return true;
 }
 
-bool skyscrapersAreValidPositioned(
-    const std::vector<std::vector<int>> &skyscrapers,
-    const std::vector<int> &clues, std::size_t x, std::size_t y,
-    std::size_t size)
+bool skyscrapersAreValidPositioned(const std::vector<Field> &fields,
+                                   const std::vector<int> &clues,
+                                   std::size_t index, std::size_t rowSize)
 {
-    if (!rowsAreValid(skyscrapers, x, y, size)) {
+    if (!rowsAreValid(fields, index, rowSize)) {
         return false;
     }
-    if (!columnsAreValid(skyscrapers, x, y, size)) {
+    if (!columnsAreValid(fields, index, rowSize)) {
         return false;
     }
-    if (!rowCluesAreValid(skyscrapers, clues, y, size)) {
+    if (!rowCluesAreValid(fields, clues, index, rowSize)) {
         return false;
     }
-    if (!columnCluesAreValid(skyscrapers, clues, x, size)) {
+    if (!columnCluesAreValid(fields, clues, index, rowSize)) {
         return false;
     }
     return true;
 }
 
 bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
-                      std::size_t x, std::size_t y, std::size_t size)
+                      std::size_t index, std::size_t countOfElements,
+                      std::size_t rowSize)
 {
-    if (x == size) {
-        x = 0;
-        y++;
-    };
-    if (y == size) {
+    if (index == countOfElements) {
         return true;
     }
-    if (board.skyscrapers[y][x] != 0) {
-        if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, x, y,
-                                           size)) {
+
+    if (board.fields[index].skyscraper() != 0) {
+        if (!skyscrapersAreValidPositioned(board.fields, clues, index,
+                                           rowSize)) {
             return false;
         }
-        if (guessSkyscrapers(board, clues, x + 1, y, size)) {
+        if (guessSkyscrapers(board, clues, index + 1, countOfElements,
+                             rowSize)) {
             return true;
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
-    for (int trySkyscraper = 1;
-         trySkyscraper <= static_cast<int>(board.skyscrapers.size());
+    auto oldBitmask = board.fields[index].bitmask();
+    for (int trySkyscraper = 1; trySkyscraper <= static_cast<int>(rowSize);
          ++trySkyscraper) {
 
-        if (board.nopes[y][x].contains(trySkyscraper)) {
+        if (board.fields[index].containsNope(trySkyscraper)) {
             continue;
         }
-        board.skyscrapers[y][x] = trySkyscraper;
-        if (!skyscrapersAreValidPositioned(board.skyscrapers, clues, x, y,
-                                           size)) {
+        board.fields[index].insertSkyscraper(trySkyscraper);
+        if (!skyscrapersAreValidPositioned(board.fields, clues, index,
+                                           rowSize)) {
+            board.fields[index].setBitmask(oldBitmask);
             continue;
         }
-        if (guessSkyscrapers(board, clues, x + 1, y, size)) {
+        if (guessSkyscrapers(board, clues, index + 1, countOfElements,
+                             rowSize)) {
             return true;
         }
+        board.fields[index].setBitmask(oldBitmask);
     }
-    board.skyscrapers[y][x] = 0;
+    board.fields[index].setBitmask(oldBitmask);
     return false;
 }
 
@@ -1277,11 +1307,11 @@ SolvePuzzle(const std::vector<int> &clues,
     board.insert(startingGrid);
 
     if (board.isSolved()) {
-        return board.skyscrapers;
+        return board.skyscrapers2d();
     }
+    guessSkyscrapers(board, clues, 0, board.fields.size(), board.size());
 
-    guessSkyscrapers(board, clues, 0, 0, board.skyscrapers.size());
-    return board.skyscrapers;
+    return board.skyscrapers2d();
 }
 
 std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)

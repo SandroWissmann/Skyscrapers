@@ -2,13 +2,13 @@
 
 #include "../shared/field.h"
 #include "../shared/row.h"
-#include "fieldelements.h"
 #include "permutations.h"
 
 namespace permutation {
 
 Slice::Slice(Permutations &permutations,
-             const std::vector<std::size_t> &permutationIndexes, Row &row)
+             const std::vector<std::size_t> &permutationIndexes, Row &row,
+             std::size_t size)
     : mPermutations{&permutations},
       mPermutationIndexes{permutationIndexes}, mRow{&row}
 {
@@ -16,11 +16,10 @@ Slice::Slice(Permutations &permutations,
         return;
     }
 
-    auto possibleBuildings = getPossibleBuildings();
+    auto possibleBuildings = getPossibleBuildings(size);
     auto fieldElements = getFieldElements(possibleBuildings);
 
-    mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-    mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+    mRow->addFieldData(fieldElements, Row::Direction::front);
 }
 
 void Slice::guessSkyscraperOutOfNeighbourNopes()
@@ -33,38 +32,34 @@ bool Slice::isSolved() const
     return mRow->allFieldsContainSkyscraper();
 }
 
-void Slice::solveFromPossiblePermutations()
+void Slice::solveFromPossiblePermutations(std::size_t size)
 {
     if (mPermutationIndexes.empty()) {
         return;
     }
 
-    while (reducePossiblePermutations()) {
+    while (reducePossiblePermutations(size)) {
+        auto lastFields = copyFields(size);
 
-        auto lastFields = copyField(mRow->getFields());
-
-        auto possibleBuildings = getPossibleBuildings();
+        auto possibleBuildings = getPossibleBuildings(size);
         auto fieldElements = getFieldElements(possibleBuildings);
 
-        mRow->addSkyscrapers(fieldElements.skyscrapers, Row::Direction::front);
-        mRow->addNopes(fieldElements.nopes, Row::Direction::front);
+        mRow->addFieldData(fieldElements, Row::Direction::front);
 
-        if (fieldsIdentical(lastFields, mRow->getFields())) {
+        if (fieldsIdentical(lastFields, size)) {
             break;
         }
     }
 }
 
-bool Slice::reducePossiblePermutations()
+bool Slice::reducePossiblePermutations(std::size_t size)
 {
     auto startSize = mPermutationIndexes.size();
     auto it = mPermutationIndexes.begin();
 
-    auto fields = mRow->getFields();
-
     while (it != mPermutationIndexes.end()) {
 
-        if (!isValidPermutation(mPermutations->operator[](*it), fields)) {
+        if (!isValidPermutation(mPermutations->operator[](*it), size)) {
             it = mPermutationIndexes.erase(it);
         }
         else {
@@ -75,9 +70,9 @@ bool Slice::reducePossiblePermutations()
     return startSize > mPermutationIndexes.size();
 }
 
-std::vector<std::set<int>> Slice::getPossibleBuildings() const
+std::vector<std::set<int>> Slice::getPossibleBuildings(std::size_t size) const
 {
-    std::vector<std::set<int>> possibleBuildingsOnFields(mRow->size());
+    std::vector<std::set<int>> possibleBuildingsOnFields(size);
 
     for (const auto &permutationIndex : mPermutationIndexes) {
 
@@ -89,30 +84,70 @@ std::vector<std::set<int>> Slice::getPossibleBuildings() const
     return possibleBuildingsOnFields;
 }
 
-FieldElements
+std::vector<Field> Slice::copyFields(std::size_t size) const
+{
+    std::vector<Field> result;
+    result.reserve(size);
+
+    for (std::size_t idx = 0; idx < size; ++idx) {
+        result.emplace_back(mRow->getFieldRef(idx));
+    }
+    return result;
+}
+
+bool Slice::fieldsIdentical(const std::vector<Field> &lastFields,
+                            std::size_t size) const
+{
+    assert(lastFields.size() == size);
+
+    for (std::size_t idx = 0; idx < size; ++idx) {
+        if (lastFields[idx] != mRow->getFieldRef(idx)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Slice::isValidPermutation(const Span<int> &permutation,
+                               std::size_t size) const
+{
+    assert(permutation.size() == size);
+
+    for (std::size_t idx = 0; idx < size; ++idx) {
+        if (mRow->getFieldRef(idx).hasSkyscraper()) {
+            if (mRow->getFieldRef(idx).skyscraper(size) != permutation[idx]) {
+                return false;
+            }
+        }
+        else if (!mRow->getFieldRef(idx).nopes(size).empty()) {
+            if (mRow->getFieldRef(idx).containsNope(permutation[idx])) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+std::vector<Field>
 Slice::getFieldElements(const std::vector<std::set<int>> &possibleBuildings)
 {
-    FieldElements fieldElements;
-    fieldElements.skyscrapers.reserve(possibleBuildings.size());
-    fieldElements.nopes.reserve(possibleBuildings.size());
+    std::vector<Field> fieldElements(possibleBuildings.size(), Field{});
 
     for (std::size_t i = 0; i < possibleBuildings.size(); ++i) {
         if (possibleBuildings[i].size() == 1) {
-            fieldElements.skyscrapers.emplace_back(
-                *possibleBuildings[i].begin());
-            fieldElements.nopes.emplace_back(std::vector<int>{});
+            fieldElements[i].insertSkyscraper(*possibleBuildings[i].begin());
         }
         else {
             std::vector<int> nopes;
             nopes.reserve(possibleBuildings.size());
             for (std::size_t j = 0; j < possibleBuildings.size(); ++j) {
                 auto it = possibleBuildings[i].find(j + 1);
+
                 if (it == possibleBuildings[i].end()) {
                     nopes.emplace_back(j + 1);
                 }
             }
-            fieldElements.skyscrapers.emplace_back(0);
-            fieldElements.nopes.emplace_back(nopes);
+            fieldElements[i].insertNopes(nopes);
         }
     }
     return fieldElements;
@@ -120,71 +155,18 @@ Slice::getFieldElements(const std::vector<std::set<int>> &possibleBuildings)
 
 std::vector<Slice> makeSlices(Permutations &permutations,
                               std::vector<Row> &rows,
-                              const std::vector<CluePair> &cluePairs)
+                              const std::vector<CluePair> &cluePairs,
+                              std::size_t size)
 {
     std::vector<Slice> slices;
     slices.reserve(rows.size());
 
     for (std::size_t i = 0; i < cluePairs.size(); ++i) {
-        slices.emplace_back(
-            Slice{permutations, permutations.permutationIndexs(i), rows[i]});
+        slices.emplace_back(Slice{
+            permutations, permutations.permutationIndexs(i), rows[i], size});
     }
 
     return slices;
-}
-
-std::vector<Field> copyField(const std::vector<Field *> &currFields)
-{
-    std::vector<Field> result;
-    result.reserve(currFields.size());
-
-    for (const auto &currField : currFields) {
-        result.emplace_back(Field{*currField});
-    }
-    return result;
-}
-
-bool fieldsIdentical(const std::vector<Field> &lastFields,
-                     const std::vector<Field *> &currFields)
-{
-    if (lastFields.size() != currFields.size()) {
-        return false;
-    }
-
-    auto lastIt = lastFields.begin();
-    auto currPtrIt = currFields.begin();
-
-    for (; lastIt != lastFields.end(); ++lastIt, ++currPtrIt) {
-        if (lastIt->skyscraper() != (*currPtrIt)->skyscraper()) {
-            return false;
-        }
-        if (lastIt->nopes().values() != (*currPtrIt)->nopes().values()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool isValidPermutation(const Span<int> &permutation,
-                        const std::vector<Field *> fields)
-{
-    auto permIt = permutation.cbegin();
-    for (auto fieldIt = fields.cbegin();
-         fieldIt != fields.cend() && permIt != permutation.cend();
-         ++fieldIt, ++permIt) {
-
-        if ((*fieldIt)->hasSkyscraper()) {
-            if ((*fieldIt)->skyscraper() != *permIt) {
-                return false;
-            }
-        }
-        else if (!(*fieldIt)->nopes().isEmpty()) {
-            if ((*fieldIt)->nopes().contains(*permIt)) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 } // namespace permutation

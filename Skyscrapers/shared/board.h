@@ -2,18 +2,17 @@
 #define BOARD_H
 
 #include "field.h"
-#include "nopes.h"
 #include "row.h"
 
 #include <string>
 #include <vector>
 
-class ClueHints;
+class RowClues;
 
 struct Board {
     Board(std::size_t size);
 
-    void insert(const std::vector<std::optional<ClueHints>> &clueHints);
+    void insert(const std::vector<RowClues> &rowClues);
 
     void insert(const std::vector<std::vector<int>> &startingSkyscrapers);
 

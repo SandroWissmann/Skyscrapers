@@ -1,61 +1,82 @@
 #include "field.h"
 
-#include "../shared/nopes.h"
-
 #include <cassert>
-
-Field::Field(std::size_t rowSize)
-    : mSkyscraper{0}, mNopes{static_cast<int>(rowSize)}
-{
-}
 
 void Field::insertSkyscraper(int skyscraper)
 {
-    //    assert(mSkyscraper == 0 || skyscraper == mSkyscraper);
-    //    if (hasSkyscraper()) {
-    //        return;
-    //    }
-    mSkyscraper = skyscraper;
-    mNopes.clear();
+    mBitmask = 1 << (skyscraper - 1);
 }
+
 void Field::insertNope(int nope)
 {
-    if (hasSkyscraper()) {
-        return;
-    }
-    mNopes.insert(nope);
+    mBitmask &= ~(1 << (nope - 1));
 }
+
 void Field::insertNopes(const std::vector<int> &nopes)
 {
-    if (hasSkyscraper()) {
-        return;
+    for (const auto nope : nopes) {
+        insertNope(nope);
     }
-    mNopes.insert(nopes);
 }
 
-bool Field::fullOfNopes() const
+void Field::insertNopes(const Field &field)
 {
-    return mNopes.sizeReached();
+    mBitmask &= field.mBitmask;
 }
 
-int Field::skyscraper() const
+int Field::skyscraper(std::size_t size) const
 {
-    return mSkyscraper;
+    if (!hasSkyscraper()) {
+        return 0;
+    }
+
+    for (std::size_t i = 0; i < size; ++i) {
+        if (bitIsToggled(mBitmask, i)) {
+            return i + 1;
+        }
+    }
+    assert(false);
+    return 0;
 }
-Nopes Field::nopes() const
+
+std::vector<int> Field::nopes(std::size_t size) const
 {
-    return mNopes;
+    std::vector<int> nopes;
+    nopes.reserve(size - 1);
+    for (std::size_t i = 0; i < size; ++i) {
+        if (!bitIsToggled(mBitmask, i)) {
+            nopes.emplace_back(i + 1);
+        }
+    }
+    return nopes;
 }
 
 bool Field::hasSkyscraper() const
 {
-    return mSkyscraper != 0;
+    return hasSingleBit(mBitmask);
 }
 
-std::optional<int> Field::lastMissingNope() const
+bool Field::containsNope(int value) const
 {
-    if (!mNopes.sizeReached()) {
-        return {};
+    return !bitIsToggled(mBitmask, value - 1);
+}
+
+bool Field::containsNopes(const std::vector<int> &values) const
+{
+    for (const auto &value : values) {
+        if (!containsNope(value)) {
+            return false;
+        }
     }
-    return mNopes.missingNumberInSequence();
+    return true;
+}
+
+bool Field::bitIsToggled(BitmaskType bitmask, int bit) const
+{
+    return bitmask & (1 << bit);
+}
+
+bool Field::hasSingleBit(BitmaskType bitmask) const
+{
+    return bitmask != 0 && (bitmask & (bitmask - 1)) == 0;
 }

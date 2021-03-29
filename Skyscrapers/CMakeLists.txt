@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(Skyscrapers LANGUAGES CXX)
 
 add_executable(Skyscrapers
-    shared/nopes.h
-    shared/nopes.cpp
+    shared/missingnumberinsequence
     shared/field.h
     shared/field.cpp
     shared/point.h
@@ -12,8 +11,8 @@ add_executable(Skyscrapers
     shared/readdirection.cpp
     shared/borderiterator.h
     shared/borderiterator.cpp
-    shared/cluehints.h
-    shared/cluehints.cpp
+    shared/rowclues.h
+    shared/rowclues.cpp
     shared/row.h
     shared/row.cpp
     shared/board.h
@@ -25,7 +24,6 @@ add_executable(Skyscrapers
     permutation/cluepair.cpp
     permutation/permutations.h
     permutation/permutations.cpp
-    permutation/fieldelements.h
     permutation/slice.h
     permutation/slice.cpp
     backtracking.h

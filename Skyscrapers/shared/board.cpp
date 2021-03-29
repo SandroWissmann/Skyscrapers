@@ -1,30 +1,29 @@
 #include "board.h"
 
 #include "borderiterator.h"
-#include "cluehints.h"
+#include "rowclues.h"
 
 #include <algorithm>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 
 Board::Board(std::size_t size)
-    : fields{std::vector<Field>(size * size, Field{size})}, mSize{size}
+    : fields{std::vector<Field>(size * size, Field{})}, mSize{size}
 {
     makeRows();
 }
 
-void Board::insert(const std::vector<std::optional<ClueHints>> &clueHints)
+void Board::insert(const std::vector<RowClues> &rowClues)
 {
-    assert(clueHints.size() == mRows.size());
+    assert(rowClues.size() == mRows.size());
 
-    for (std::size_t i = 0; i < clueHints.size(); ++i) {
-        if (!clueHints[i]) {
+    for (std::size_t i = 0; i < rowClues.size(); ++i) {
+        if (rowClues[i].isEmpty()) {
             continue;
         }
-        mRows[i].addNopes(clueHints[i]->nopes, Row::Direction::front);
-        mRows[i].addSkyscrapers(clueHints[i]->skyscrapers,
-                                Row::Direction::front);
+        mRows[i].addFieldData(rowClues[i].fields, Row::Direction::front);
     }
 }
 
@@ -37,8 +36,18 @@ void Board::insert(const std::vector<std::vector<int>> &startingSkyscrapers)
     assert(startingSkyscrapers.size() == boardSize);
 
     for (std::size_t i = 0; i < startingSkyscrapers.size(); ++i) {
-        mRows[i + boardSize].addSkyscrapers(startingSkyscrapers[i],
-                                            Row::Direction::back);
+
+        // ugly glue code probaly better to set skyscrapers directly in the
+        // fields
+        std::vector<Field> fields(startingSkyscrapers[i].size());
+
+        for (std::size_t fieldIdx = 0; fieldIdx < fields.size(); ++fieldIdx) {
+            if (startingSkyscrapers[i][fieldIdx] == 0) {
+                continue;
+            }
+            fields[fieldIdx].insertSkyscraper(startingSkyscrapers[i][fieldIdx]);
+        }
+        mRows[i + boardSize].addFieldData(fields, Row::Direction::back);
     }
 }
 
@@ -64,7 +73,7 @@ std::vector<std::vector<int>> Board::skyscrapers2d() const
             ++j;
             skyscrapers2d[j].reserve(mSize);
         }
-        skyscrapers2d[j].emplace_back(fields[i].skyscraper());
+        skyscrapers2d[j].emplace_back(fields[i].skyscraper(mSize));
     }
     return skyscrapers2d;
 }
@@ -82,8 +91,8 @@ void Board::makeRows()
     mRows.reserve(rowSize);
 
     for (std::size_t i = 0; i < rowSize; ++i, ++borderIterator) {
-        mRows.emplace_back(Row{fields, mSize, borderIterator.point(),
-                               borderIterator.readDirection()});
+        mRows.emplace_back(
+            Row{*this, borderIterator.point(), borderIterator.readDirection()});
     }
     connnectRowsWithCrossingRows();
 }
@@ -117,29 +126,28 @@ void debug_print(Board &board, const std::string &title)
             std::cout << '\n';
         }
 
-        if (board.fields[i].skyscraper() != 0) {
-            std::cout << std::setw(board.size() * 2);
-            std::cout << "V" + std::to_string(board.fields[i].skyscraper());
+        auto elementSize = board.size() * 2;
+        std::string element;
+        element.reserve(elementSize);
+        if (board.fields[i].skyscraper(board.size()) != 0) {
+            element =
+                "V" + std::to_string(board.fields[i].skyscraper(board.size()));
         }
-        else if (board.fields[i].skyscraper() == 0 &&
-                 !board.fields[i].nopes().isEmpty()) {
-            auto nopes_set = board.fields[i].nopes().values();
+        else if (board.fields[i].skyscraper(board.size()) == 0 &&
+                 !board.fields[i].nopes(board.size()).empty()) {
+            auto nopes_set = board.fields[i].nopes(board.size());
             std::vector<int> nopes(nopes_set.begin(), nopes_set.end());
             std::sort(nopes.begin(), nopes.end());
 
-            std::string nopesStr;
             for (std::size_t i = 0; i < nopes.size(); ++i) {
-                nopesStr.append(std::to_string(nopes[i]));
+                element.append(std::to_string(nopes[i]));
                 if (i != nopes.size() - 1) {
-                    nopesStr.push_back(',');
+                    element.push_back(',');
                 }
             }
-            std::cout << std::setw(board.size() * 2);
-            std::cout << nopesStr;
         }
-        else {
-            std::cout << ' ';
-        }
+        element.resize(elementSize, ' ');
+        std::cout << element;
     }
     std::cout << '\n';
 }

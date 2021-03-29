@@ -4,8 +4,8 @@
 #include "permutation/permutations.h"
 #include "permutation/slice.h"
 #include "shared/board.h"
-#include "shared/cluehints.h"
 #include "shared/row.h"
+#include "shared/rowclues.h"
 
 #include <cassert>
 #include <chrono>
@@ -20,11 +20,11 @@ SolvePuzzle(const std::vector<int> &clues,
 
     std::size_t boardSize = clues.size() / 4;
 
-    auto clueHints = getClueHints(clues, boardSize);
+    auto rowClues = getRowClues(clues, boardSize);
 
     Board board{boardSize};
 
-    board.insert(clueHints);
+    board.insert(rowClues);
     board.insert(startingGrid);
 
     if (board.isSolved()) {
@@ -36,7 +36,7 @@ SolvePuzzle(const std::vector<int> &clues,
                               Span{&board.mRows[0], board.mRows.size()});
 
     std::vector<Slice> slices =
-        makeSlices(permutations, board.mRows, cluePairs);
+        makeSlices(permutations, board.mRows, cluePairs, boardSize);
 
     for (;;) {
         bool allFull = true;
@@ -44,7 +44,7 @@ SolvePuzzle(const std::vector<int> &clues,
             if (slices[i].isSolved()) {
                 continue;
             }
-            slices[i].solveFromPossiblePermutations();
+            slices[i].solveFromPossiblePermutations(boardSize);
             slices[i].guessSkyscraperOutOfNeighbourNopes();
 
             if (!slices[i].isSolved()) {

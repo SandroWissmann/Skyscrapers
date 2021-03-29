@@ -45,11 +45,10 @@ add_executable(
     tst_codewarspermutationtest.h
     tst_codewarsbacktrackingtest.h
     main.cpp
-    ../Skyscrapers/shared/nopes.cpp
     ../Skyscrapers/shared/field.cpp
     ../Skyscrapers/shared/readdirection.cpp
     ../Skyscrapers/shared/borderiterator.cpp
-    ../Skyscrapers/shared/cluehints.cpp
+    ../Skyscrapers/shared/rowclues.cpp
     ../Skyscrapers/shared/row.cpp
     ../Skyscrapers/shared/board.cpp
     ../Skyscrapers/permutation.cpp

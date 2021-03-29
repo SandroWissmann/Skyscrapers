@@ -4,15 +4,25 @@
 
 #include <algorithm>
 
+#include <iostream>
+
 namespace backtracking {
+
+// int count = 0;
+
 bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
                       std::size_t index, std::size_t countOfElements,
                       std::size_t rowSize)
 {
+    // debug_print(board);
+    //++count;
     if (index == countOfElements) {
+        // std::cout << count << '\n';
+        // count = 0;
         return true;
     }
-    if (board.fields[index].skyscraper() != 0) {
+
+    if (board.fields[index].hasSkyscraper()) {
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
             return false;
@@ -24,23 +34,26 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         return false;
     }
 
+    auto oldField = board.fields[index];
     for (int trySkyscraper = 1; trySkyscraper <= static_cast<int>(rowSize);
          ++trySkyscraper) {
 
-        if (board.fields[index].nopes().contains(trySkyscraper)) {
+        if (board.fields[index].containsNope(trySkyscraper)) {
             continue;
         }
         board.fields[index].insertSkyscraper(trySkyscraper);
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
+            board.fields[index] = oldField;
             continue;
         }
         if (guessSkyscrapers(board, clues, index + 1, countOfElements,
                              rowSize)) {
             return true;
         }
+        board.fields[index] = oldField;
     }
-    board.fields[index].insertSkyscraper(0);
+    board.fields[index] = oldField;
     return false;
 }
 
@@ -54,10 +67,10 @@ bool skyscrapersAreValidPositioned(const std::vector<Field> &fields,
     if (!columnsAreValid(fields, index, rowSize)) {
         return false;
     }
-    if (!rowCluesAreValid(fields, clues, index, rowSize)) {
+    if (!cluesInRowAreValid(fields, clues, index, rowSize)) {
         return false;
     }
-    if (!columnCluesAreValid(fields, clues, index, rowSize)) {
+    if (!cluesInColumnAreValid(fields, clues, index, rowSize)) {
         return false;
     }
     return true;
@@ -72,7 +85,8 @@ bool rowsAreValid(const std::vector<Field> &fields, std::size_t index,
         if (currIndex == index) {
             continue;
         }
-        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
+        if (fields[currIndex].skyscraper(rowSize) ==
+            fields[index].skyscraper(rowSize)) {
             return false;
         }
     }
@@ -89,20 +103,21 @@ bool columnsAreValid(const std::vector<Field> &fields, std::size_t index,
         if (currIndex == index) {
             continue;
         }
-        if (fields[currIndex].skyscraper() == fields[index].skyscraper()) {
+        if (fields[currIndex].skyscraper(rowSize) ==
+            fields[index].skyscraper(rowSize)) {
             return false;
         }
     }
     return true;
 }
 
-bool rowCluesAreValid(const std::vector<Field> &fields,
-                      const std::vector<int> &clues, std::size_t index,
-                      std::size_t rowSize)
+bool cluesInRowAreValid(const std::vector<Field> &fields,
+                        const std::vector<int> &clues, std::size_t index,
+                        std::size_t rowSize)
 {
     std::size_t row = index / rowSize;
 
-    auto [frontClue, backClue] = getRowClues(clues, row, rowSize);
+    auto [frontClue, backClue] = getCluesInRow(clues, row, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
@@ -123,7 +138,7 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     }
 
     if (frontClue != 0) {
-        auto frontVisible = visibleBuildings(citBegin, citEnd);
+        auto frontVisible = visibleBuildings(citBegin, citEnd, rowSize);
 
         if (frontClue != frontVisible) {
             return false;
@@ -134,7 +149,7 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     auto critEnd = std::make_reverse_iterator(citBegin);
 
     if (backClue != 0) {
-        auto backVisible = visibleBuildings(critBegin, critEnd);
+        auto backVisible = visibleBuildings(critBegin, critEnd, rowSize);
 
         if (backClue != backVisible) {
             return false;
@@ -143,21 +158,21 @@ bool rowCluesAreValid(const std::vector<Field> &fields,
     return true;
 }
 
-std::tuple<int, int> getRowClues(const std::vector<int> &clues, std::size_t row,
-                                 std::size_t rowSize)
+std::tuple<int, int> getCluesInRow(const std::vector<int> &clues,
+                                   std::size_t row, std::size_t rowSize)
 {
     int frontClue = clues[clues.size() - 1 - row];
     int backClue = clues[rowSize + row];
     return {frontClue, backClue};
 }
 
-bool columnCluesAreValid(const std::vector<Field> &fields,
-                         const std::vector<int> &clues, std::size_t index,
-                         std::size_t rowSize)
+bool cluesInColumnAreValid(const std::vector<Field> &fields,
+                           const std::vector<int> &clues, std::size_t index,
+                           std::size_t rowSize)
 {
     std::size_t column = index % rowSize;
 
-    auto [frontClue, backClue] = getColumnClues(clues, column, rowSize);
+    auto [frontClue, backClue] = getCluesInColumn(clues, column, rowSize);
 
     if (frontClue == 0 && backClue == 0) {
         return true;
@@ -181,15 +196,15 @@ bool columnCluesAreValid(const std::vector<Field> &fields,
     }
 
     if (frontClue != 0) {
-        auto frontVisible =
-            visibleBuildings(verticalFields.cbegin(), verticalFields.cend());
+        auto frontVisible = visibleBuildings(verticalFields.cbegin(),
+                                             verticalFields.cend(), rowSize);
         if (frontClue != frontVisible) {
             return false;
         }
     }
     if (backClue != 0) {
-        auto backVisible =
-            visibleBuildings(verticalFields.crbegin(), verticalFields.crend());
+        auto backVisible = visibleBuildings(verticalFields.crbegin(),
+                                            verticalFields.crend(), rowSize);
 
         if (backClue != backVisible) {
             return false;
@@ -198,8 +213,8 @@ bool columnCluesAreValid(const std::vector<Field> &fields,
     return true;
 }
 
-std::tuple<int, int> getColumnClues(const std::vector<int> &clues,
-                                    std::size_t column, std::size_t rowSize)
+std::tuple<int, int> getCluesInColumn(const std::vector<int> &clues,
+                                      std::size_t column, std::size_t rowSize)
 {
     int frontClue = clues[column];
     int backClue = clues[rowSize * 3 - 1 - column];

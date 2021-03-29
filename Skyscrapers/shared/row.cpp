@@ -1,89 +1,87 @@
-#include "row.h"
+﻿#include "row.h"
 
+#include "board.h"
 #include "borderiterator.h"
 #include "field.h"
-#include "nopes.h"
+#include "missingnumberinsequence.h"
 #include "point.h"
 
 #include <algorithm>
 #include <cassert>
 #include <unordered_map>
 
-Row::Row(std::vector<Field> &fields, std::size_t size, const Point &startPoint,
+Row::Row(Board &board, const Point &startPoint,
          const ReadDirection &readDirection)
-    : mRowFields{getRowFields(readDirection, fields, size, startPoint)}
+    : mBoard{board}, mStartPoint{startPoint}, mReadDirection{readDirection}
 {
-}
-
-void Row::insertSkyscraper(int pos, int skyscraper)
-{
-    assert(pos >= 0 && pos < static_cast<int>(mRowFields.size()));
-    assert(skyscraper > 0 && skyscraper <= static_cast<int>(mRowFields.size()));
-    auto it = mRowFields.begin() + pos;
-    insertSkyscraper(it, skyscraper);
-}
-
-std::size_t Row::size() const
-{
-    return mRowFields.size();
 }
 
 void Row::addCrossingRows(Row *crossingRow)
 {
     assert(crossingRow != nullptr);
-    assert(mCrossingRows.size() < size());
+    assert(mCrossingRows.size() < mBoard.size());
     mCrossingRows.push_back(crossingRow);
 }
 
 bool Row::hasOnlyOneNopeField() const
 {
-    return skyscraperCount() == static_cast<int>(size() - 1);
+    return skyscraperCount() == static_cast<int>(mBoard.size() - 1);
 }
 
 void Row::addLastMissingSkyscraper()
 {
     assert(hasOnlyOneNopeField());
 
-    auto nopeFieldIt = mRowFields.end();
     std::vector<int> sequence;
-    sequence.reserve(size() - 1);
+    sequence.reserve(mBoard.size() - 1);
 
-    for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
-        if ((*it)->hasSkyscraper()) {
-            sequence.emplace_back((*it)->skyscraper());
+    std::size_t nopeFieldIdx = -1;
+    for (std::size_t idx = 0; idx < mBoard.size(); ++idx) {
+        if (getFieldRef(idx).hasSkyscraper()) {
+            sequence.emplace_back((getFieldRef(idx)).skyscraper(mBoard.size()));
         }
         else {
-            nopeFieldIt = it;
+            nopeFieldIdx = idx;
         }
     }
-    assert(nopeFieldIt != mRowFields.end());
+
+    assert(nopeFieldIdx != -1);
     assert(skyscraperCount() == static_cast<int>(sequence.size()));
+
     auto missingValue =
         missingNumberInSequence(sequence.begin(), sequence.end());
-    assert(missingValue >= 0 && missingValue <= static_cast<int>(size()));
-    insertSkyscraper(nopeFieldIt, missingValue);
+
+    assert(missingValue >= 0 &&
+           missingValue <= static_cast<int>(mBoard.size()));
+
+    (getFieldRef(nopeFieldIdx)).insertSkyscraper(missingValue);
+    insertSkyscraperNeighbourHandling(nopeFieldIdx, missingValue);
 }
 
 void Row::addNopesToAllNopeFields(int nope)
 {
-    for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
-        if ((*it)->hasSkyscraper()) {
+    for (std::size_t idx = 0; idx < mBoard.size(); ++idx) {
+        if (getFieldRef(idx).hasSkyscraper()) {
             continue;
         }
-        insertNope(it, nope);
+
+        bool hasSkyscraperBefore = false;
+        getFieldRef(idx).insertNope(nope);
+        insertNopesNeighbourHandling(idx, nope, hasSkyscraperBefore);
     }
 }
 
 bool Row::allFieldsContainSkyscraper() const
 {
-    return skyscraperCount() == static_cast<int>(size());
+    return skyscraperCount() == static_cast<int>(mBoard.size());
 }
 
 int Row::skyscraperCount() const
 {
     int count = 0;
-    for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if ((*cit)->hasSkyscraper()) {
+
+    for (std::size_t i = 0; i < mBoard.size(); ++i) {
+        if (getFieldRef(i).hasSkyscraper()) {
             ++count;
         }
     }
@@ -93,8 +91,11 @@ int Row::skyscraperCount() const
 int Row::nopeCount(int nope) const
 {
     int count = 0;
-    for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if ((*cit)->nopes().contains(nope)) {
+    for (std::size_t i = 0; i < mBoard.size(); ++i) {
+        if (getFieldRef(i).hasSkyscraper()) {
+            continue;
+        }
+        if (getFieldRef(i).containsNope(nope)) {
             ++count;
         }
     }
@@ -116,137 +117,114 @@ bool Row::hasSkyscrapers(const std::vector<int> &skyscrapers,
                          Row::Direction direction) const
 {
     if (direction == Direction::front) {
-        return hasSkyscrapers(skyscrapers.cbegin(), skyscrapers.cend(),
-                              mRowFields.cbegin(), mRowFields.cend());
+        return hasSkyscrapers(skyscrapers.cbegin(), skyscrapers.cend());
     }
-    return hasSkyscrapers(skyscrapers.cbegin(), skyscrapers.cend(),
-                          mRowFields.crbegin(), mRowFields.crend());
+    return hasSkyscrapers(skyscrapers.crbegin(), skyscrapers.crend());
 }
 
 bool Row::hasNopes(const std::vector<std::vector<int>> &nopes,
                    Direction direction) const
 {
     if (direction == Direction::front) {
-        return hasNopes(nopes.cbegin(), nopes.cend(), mRowFields.cbegin(),
-                        mRowFields.cend());
+        return hasNopes(nopes.cbegin(), nopes.cend());
     }
-    return hasNopes(nopes.cbegin(), nopes.cend(), mRowFields.crbegin(),
-                    mRowFields.crend());
+    return hasNopes(nopes.crbegin(), nopes.crend());
 }
 
-void Row::addSkyscrapers(const std::vector<int> &skyscrapers,
-                         Direction direction)
+void Row::addFieldData(const std::vector<Field> &fieldData, Direction direction)
 {
     if (direction == Direction::front) {
-        addSkyscrapers(skyscrapers.begin(), skyscrapers.end(),
-                       mRowFields.begin(), mRowFields.end());
+        addFieldData(fieldData.begin(), fieldData.end());
     }
     else {
-        addSkyscrapers(skyscrapers.begin(), skyscrapers.end(),
-                       mRowFields.rbegin(), mRowFields.rend());
-    }
-}
-void Row::addNopes(const std::vector<std::vector<int>> &nopes,
-                   Direction direction)
-{
-    if (direction == Direction::front) {
-        addNopes(nopes.begin(), nopes.end(), mRowFields.begin(),
-                 mRowFields.end());
-    }
-    else {
-        addNopes(nopes.begin(), nopes.end(), mRowFields.rbegin(),
-                 mRowFields.rend());
+        addFieldData(fieldData.rbegin(), fieldData.rend());
     }
 }
 
-std::vector<Field *> Row::getFields() const
+template <typename SkyIterator>
+bool Row::hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd) const
 {
-    return mRowFields;
-}
-
-template <typename SkyIterator, typename FieldIterator>
-bool Row::hasSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                         FieldIterator fieldItBegin,
-                         FieldIterator fieldItEnd) const
-{
-    auto skyIt = skyItBegin;
-    for (auto fieldIt = fieldItBegin;
-         fieldIt != fieldItEnd && skyIt != skyItEnd; ++fieldIt, ++skyIt) {
-        if (*skyIt == 0 && (*fieldIt)->hasSkyscraper()) {
+    for (auto skyIt = skyItBegin; skyIt != skyItEnd; ++skyIt) {
+        auto idx = std::distance(skyItBegin, skyIt);
+        if (*skyIt == 0 && getFieldRef(idx).hasSkyscraper()) {
             continue;
         }
-        if ((*fieldIt)->skyscraper() != *skyIt) {
+        if (getFieldRef(idx).skyscraper(mBoard.size()) != *skyIt) {
             return false;
         }
     }
     return true;
 }
 
-template <typename NopesIterator, typename FieldIterator>
-bool Row::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                   FieldIterator fieldItBegin, FieldIterator fieldItEnd) const
+template <typename NopesIterator>
+bool Row::hasNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd) const
 {
-    auto nopesIt = nopesItBegin;
-    for (auto fieldIt = fieldItBegin;
-         fieldIt != fieldItEnd && nopesIt != nopesItEnd; ++fieldIt, ++nopesIt) {
-
+    for (auto nopesIt = nopesItBegin; nopesIt != nopesItEnd; ++nopesIt) {
         if (nopesIt->empty()) {
             continue;
         }
-        if ((*fieldIt)->hasSkyscraper()) {
+        auto idx = std::distance(nopesItBegin, nopesIt);
+        if (getFieldRef(idx).hasSkyscraper()) {
             return false;
         }
-        if (!(*fieldIt)->nopes().contains(*nopesIt)) {
+        if (!getFieldRef(idx).containsNopes(*nopesIt)) {
             return false;
         }
     }
     return true;
 }
 
-template <typename SkyIterator, typename FieldIterator>
-void Row::addSkyscrapers(SkyIterator skyItBegin, SkyIterator skyItEnd,
-                         FieldIterator fieldItBegin, FieldIterator fieldItEnd)
+template <typename FieldDataIterator>
+void Row::addFieldData(FieldDataIterator fieldDataItBegin,
+                       FieldDataIterator fieldDataItEnd)
 {
-    auto skyIt = skyItBegin;
-    for (auto fieldIt = fieldItBegin;
-         fieldIt != fieldItEnd && skyIt != skyItEnd; ++fieldIt, ++skyIt) {
-        if (*skyIt == 0) {
-            continue;
-        }
-        insertSkyscraper(fieldIt, *skyIt);
+    for (auto fieldDataIt = fieldDataItBegin; fieldDataIt != fieldDataItEnd;
+         ++fieldDataIt) {
+
+        auto idx = std::distance(fieldDataItBegin, fieldDataIt);
+        insertFieldData(idx, *fieldDataIt);
     }
 }
 
-template <typename NopesIterator, typename FieldIterator>
-void Row::addNopes(NopesIterator nopesItBegin, NopesIterator nopesItEnd,
-                   FieldIterator fieldItBegin, FieldIterator fieldItEnd)
+const Field &Row::getFieldRef(std::size_t idx) const
 {
-    auto nopesIt = nopesItBegin;
-    for (auto fieldIt = fieldItBegin;
-         fieldIt != fieldItEnd && nopesIt != nopesItEnd; ++fieldIt, ++nopesIt) {
-        if (nopesIt->empty()) {
-            continue;
+    assert(idx >= 0 && idx < mBoard.size());
+
+    if (mReadDirection == ReadDirection::topToBottom) {
+        return mBoard
+            .fields[mStartPoint.x + (mStartPoint.y + idx) * mBoard.size()];
+    }
+    return mBoard.fields[mStartPoint.x - idx + (mStartPoint.y) * mBoard.size()];
+}
+
+void Row::insertFieldData(std::size_t idx, const Field &fieldData)
+{
+    if (fieldData.hasSkyscraper()) {
+        if (getFieldRef(idx).hasSkyscraper()) {
+            return;
         }
-        insertNopes(fieldIt, *nopesIt);
+        getFieldRef(idx) = fieldData;
+        insertSkyscraperNeighbourHandling(
+            idx, getFieldRef(idx).skyscraper(mBoard.size()));
+    }
+    else {
+        bool hasSkyscraperBefore = getFieldRef(idx).hasSkyscraper();
+        getFieldRef(idx).insertNopes(fieldData);
+
+        auto nopes = fieldData.nopes(mBoard.size());
+
+        for (const auto &nope : nopes) {
+            insertNopesNeighbourHandling(idx, nope, hasSkyscraperBefore);
+        }
     }
 }
 
-template <typename FieldIterator>
-void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
+void Row::insertSkyscraperNeighbourHandling(std::size_t idx, int skyscraper)
 {
-    assert(mCrossingRows.size() == size());
-
-    if ((*fieldIt)->hasSkyscraper()) {
-        return;
-    }
-    (*fieldIt)->insertSkyscraper(skyscraper);
-
     if (hasOnlyOneNopeField()) {
         addLastMissingSkyscraper();
     }
     addNopesToAllNopeFields(skyscraper);
-
-    int idx = getIdx(fieldIt);
 
     if (mCrossingRows[idx]->hasOnlyOneNopeField()) {
         mCrossingRows[idx]->addLastMissingSkyscraper();
@@ -255,97 +233,54 @@ void Row::insertSkyscraper(FieldIterator fieldIt, int skyscraper)
     mCrossingRows[idx]->addNopesToAllNopeFields(skyscraper);
 }
 
-template <typename FieldIterator>
-void Row::insertNope(FieldIterator fieldIt, int nope)
+void Row::insertNopesNeighbourHandling(std::size_t idx, int nope,
+                                       bool hadSkyscraperBefore)
 {
-    if ((*fieldIt)->hasSkyscraper()) {
-        return;
-    }
-    if ((*fieldIt)->nopes().contains(nope)) {
-        return;
-    }
-    (*fieldIt)->insertNope(nope);
+    // skyscraper was added so we have to add nopes to the neighbours
+    if (!hadSkyscraperBefore && getFieldRef(idx).hasSkyscraper()) {
 
-    auto optlastMissingNope = (*fieldIt)->lastMissingNope();
-    if (optlastMissingNope) {
-        insertSkyscraper(fieldIt, *optlastMissingNope);
+        insertSkyscraperNeighbourHandling(
+            idx, getFieldRef(idx).skyscraper(mBoard.size()));
     }
 
     if (onlyOneFieldWithoutNope(nope)) {
         insertSkyscraperToFirstFieldWithoutNope(nope);
     }
 
-    int idx = getIdx(fieldIt);
-
     if (mCrossingRows[idx]->onlyOneFieldWithoutNope(nope)) {
         mCrossingRows[idx]->insertSkyscraperToFirstFieldWithoutNope(nope);
     }
 }
 
-template <typename IteratorType>
-void Row::insertNopes(IteratorType it, const std::vector<int> &nopes)
-{
-    for (const auto &nope : nopes) {
-        insertNope(it, nope);
-    }
-}
-
-int Row::getIdx(std::vector<Field *>::const_iterator cit) const
-{
-    return std::distance(mRowFields.cbegin(), cit);
-}
-
-int Row::getIdx(std::vector<Field *>::const_reverse_iterator crit) const
-{
-    return size() - std::distance(mRowFields.crbegin(), crit) - 1;
-}
-
-std::vector<Field *> Row::getRowFields(const ReadDirection &readDirection,
-                                       std::vector<Field> &boardFields,
-                                       std::size_t size,
-                                       const Point &startPoint)
-{
-    std::vector<Field *> fields;
-    fields.reserve(size);
-    std::size_t x = startPoint.x;
-    std::size_t y = startPoint.y;
-
-    if (readDirection == ReadDirection::topToBottom) {
-        for (std::size_t i = 0; i < size; ++i) {
-            fields.emplace_back(&boardFields[x + y * size]);
-            ++y;
-        }
-    }
-    else { // ReadDirection::rightToLeft
-        for (std::size_t i = 0; i < size; ++i) {
-            fields.emplace_back(&boardFields[x + y * size]);
-            --x;
-        }
-    }
-    return fields;
-}
-
 bool Row::onlyOneFieldWithoutNope(int nope) const
 {
-    auto cit = std::find_if(
-        mRowFields.cbegin(), mRowFields.cend(),
-        [nope](const auto &field) { return field->skyscraper() == nope; });
-    if (cit != mRowFields.cend()) {
+    if (nopeExistsAsSkyscraperInFields(nope)) {
         return false;
     }
-    if (nopeCount(nope) < static_cast<int>(size()) - skyscraperCount() - 1) {
+    if (nopeCount(nope) <
+        static_cast<int>(mBoard.size()) - skyscraperCount() - 1) {
         return false;
     }
     return true;
+}
+
+bool Row::nopeExistsAsSkyscraperInFields(int nope) const
+{
+    for (std::size_t idx = 0; idx < mBoard.size(); ++idx) {
+        if (getFieldRef(idx).skyscraper(mBoard.size()) == nope) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::optional<int> Row::nopeValueInAllButOneField() const
 {
     std::unordered_map<int, int> nopeAndCount;
 
-    for (auto cit = mRowFields.cbegin(); cit != mRowFields.cend(); ++cit) {
-        if (!(*cit)->hasSkyscraper()) {
-            auto nopes = (*cit)->nopes().containing();
+    for (std::size_t i = 0; i < mBoard.size(); ++i) {
+        if (!getFieldRef(i).hasSkyscraper()) {
+            auto nopes = getFieldRef(i).nopes(mBoard.size());
             for (const auto &nope : nopes) {
                 if (hasSkyscraper(nope)) {
                     continue;
@@ -354,8 +289,10 @@ std::optional<int> Row::nopeValueInAllButOneField() const
             }
         }
     }
+
     for (auto cit = nopeAndCount.cbegin(); cit != nopeAndCount.end(); ++cit) {
-        if (cit->second == static_cast<int>(size()) - skyscraperCount() - 1) {
+        if (cit->second ==
+            static_cast<int>(mBoard.size()) - skyscraperCount() - 1) {
             return {cit->first};
         }
     }
@@ -364,12 +301,13 @@ std::optional<int> Row::nopeValueInAllButOneField() const
 
 void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
 {
-    for (auto it = mRowFields.begin(); it != mRowFields.end(); ++it) {
-        if ((*it)->hasSkyscraper()) {
+    for (std::size_t idx = 0; idx < mBoard.size(); ++idx) {
+        if ((getFieldRef(idx)).hasSkyscraper()) {
             continue;
         }
-        if (!(*it)->nopes().contains(nope)) {
-            insertSkyscraper(it, nope);
+        if (!(getFieldRef(idx)).containsNope(nope)) {
+            (getFieldRef(idx).insertSkyscraper(nope));
+            insertSkyscraperNeighbourHandling(idx, nope);
             return; // there can be max one skyscraper per row;
         }
     }
@@ -377,10 +315,21 @@ void Row::insertSkyscraperToFirstFieldWithoutNope(int nope)
 
 bool Row::hasSkyscraper(int skyscraper) const
 {
-    for (const auto &field : mRowFields) {
-        if (field->skyscraper() == skyscraper) {
+    for (std::size_t i = 0; i < mBoard.size(); ++i) {
+        if (getFieldRef(i).skyscraper(mBoard.size()) == skyscraper) {
             return true;
         }
     }
     return false;
+}
+
+Field &Row::getFieldRef(std::size_t idx)
+{
+    assert(idx >= 0 && idx < mBoard.size());
+
+    if (mReadDirection == ReadDirection::topToBottom) {
+        return mBoard
+            .fields[mStartPoint.x + (mStartPoint.y + idx) * mBoard.size()];
+    }
+    return mBoard.fields[mStartPoint.x - idx + (mStartPoint.y) * mBoard.size()];
 }
