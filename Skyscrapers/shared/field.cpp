@@ -21,7 +21,7 @@ void Field::insertNopes(const std::vector<int> &nopes)
 
 void Field::insertNopes(const Field &field)
 {
-    mBitmask &= field.bitmask();
+    mBitmask &= field.mBitmask;
 }
 
 int Field::skyscraper(std::size_t size) const
@@ -53,7 +53,7 @@ std::vector<int> Field::nopes(std::size_t size) const
 
 bool Field::hasSkyscraper() const
 {
-    return hasSingleBit(bitmask());
+    return hasSingleBit(mBitmask);
 }
 
 bool Field::containsNope(int value) const
@@ -69,16 +69,6 @@ bool Field::containsNopes(const std::vector<int> &values) const
         }
     }
     return true;
-}
-
-BitmaskType Field::bitmask() const
-{
-    return mBitmask;
-}
-
-void Field::setBitmask(BitmaskType bitmask)
-{
-    mBitmask = bitmask;
 }
 
 bool Field::bitIsToggled(BitmaskType bitmask, int bit) const

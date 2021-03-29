@@ -34,7 +34,7 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         return false;
     }
 
-    auto oldBitmask = board.fields[index].bitmask();
+    auto oldField = board.fields[index];
     for (int trySkyscraper = 1; trySkyscraper <= static_cast<int>(rowSize);
          ++trySkyscraper) {
 
@@ -44,16 +44,16 @@ bool guessSkyscrapers(Board &board, const std::vector<int> &clues,
         board.fields[index].insertSkyscraper(trySkyscraper);
         if (!skyscrapersAreValidPositioned(board.fields, clues, index,
                                            rowSize)) {
-            board.fields[index].setBitmask(oldBitmask);
+            board.fields[index] = oldField;
             continue;
         }
         if (guessSkyscrapers(board, clues, index + 1, countOfElements,
                              rowSize)) {
             return true;
         }
-        board.fields[index].setBitmask(oldBitmask);
+        board.fields[index] = oldField;
     }
-    board.fields[index].setBitmask(oldBitmask);
+    board.fields[index] = oldField;
     return false;
 }
 

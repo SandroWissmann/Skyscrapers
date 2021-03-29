@@ -203,7 +203,7 @@ void Row::insertFieldData(std::size_t idx, const Field &fieldData)
         if (getFieldRef(idx).hasSkyscraper()) {
             return;
         }
-        getFieldRef(idx).setBitmask(fieldData.bitmask());
+        getFieldRef(idx) = fieldData;
         insertSkyscraperNeighbourHandling(
             idx, getFieldRef(idx).skyscraper(mBoard.size()));
     }

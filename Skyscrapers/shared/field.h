@@ -44,9 +44,6 @@ public:
     bool containsNope(int value) const;
     bool containsNopes(const std::vector<int> &values) const;
 
-    BitmaskType bitmask() const;
-    void setBitmask(BitmaskType bitmask);
-
 private:
     bool bitIsToggled(BitmaskType bitmask, int bit) const;
     // same as c++20 std::has_single_bit()

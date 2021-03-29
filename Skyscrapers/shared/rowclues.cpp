@@ -108,9 +108,7 @@ RowClues merge(RowClues frontRowClues, RowClues backRowClues)
             continue;
         }
         else if (backRowClues.fields[i].hasSkyscraper()) {
-            frontRowClues.fields[i].setBitmask(
-                frontRowClues.fields[i].bitmask() |
-                backRowClues.fields[i].bitmask());
+            frontRowClues.fields[i] = backRowClues.fields[i];
         }
         else { // only nopes merge nopes
             frontRowClues.fields[i].insertNopes(backRowClues.fields[i]);

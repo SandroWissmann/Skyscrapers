@@ -90,10 +90,7 @@ std::vector<Field> Slice::copyFields(std::size_t size) const
     result.reserve(size);
 
     for (std::size_t idx = 0; idx < size; ++idx) {
-        Field field;
-        auto bitmask = mRow->getFieldRef(idx).bitmask();
-        field.setBitmask(bitmask);
-        result.emplace_back(field);
+        result.emplace_back(mRow->getFieldRef(idx));
     }
     return result;
 }
@@ -104,7 +101,7 @@ bool Slice::fieldsIdentical(const std::vector<Field> &lastFields,
     assert(lastFields.size() == size);
 
     for (std::size_t idx = 0; idx < size; ++idx) {
-        if (lastFields[idx].bitmask() != mRow->getFieldRef(idx).bitmask()) {
+        if (lastFields[idx] != mRow->getFieldRef(idx)) {
             return false;
         }
     }
