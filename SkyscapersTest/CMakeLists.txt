@@ -39,11 +39,15 @@ include_directories(${GTestIncludes})
 
 add_executable(
     SkyscrapersTest
-    testdataprovider.h
-    tst_permutationtest.h
-    tst_backtrackingtest.h
+    test_skyscraper_provider.h
+    test_skyscraper_partial_provider.h
     tst_codewarspermutationtest.h
     tst_codewarsbacktrackingtest.h
+    permutation/tst_permutationtest.h
+    permutation/tst_permutation_partialtest.h
+    backtracking/tst_backtrackingtest.h
+    backtracking/tst_backtracking_partialtest.h
+    hybrid/tst_hybridtest.h
     main.cpp
     ../Skyscrapers/shared/field.cpp
     ../Skyscrapers/shared/readdirection.cpp
@@ -57,6 +61,7 @@ add_executable(
     ../Skyscrapers/permutation/slice.cpp
     ../Skyscrapers/backtracking.cpp
     ../Skyscrapers/backtracking/algorithm.cpp
+    ../Skyscrapers/hybrid.cpp
     ../Skyscrapers/codewarsbacktracking.cpp
     ../Skyscrapers/codewarspermutation.cpp
 
