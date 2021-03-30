@@ -9,7 +9,8 @@
 
 class RowClues;
 
-struct Board {
+class Board {
+public:
     Board(std::size_t size);
 
     void insert(const std::vector<RowClues> &rowClues);

@@ -28,7 +28,8 @@ SolvePuzzle(const std::vector<int> &clues,
     if (board.isSolved()) {
         return board.skyscrapers2d();
     }
-    guessSkyscrapers(board, clues, 0, board.fields.size(), board.size());
+
+    solveBoard(board, clues);
 
     return board.skyscrapers2d();
 }
@@ -36,6 +37,11 @@ SolvePuzzle(const std::vector<int> &clues,
 std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
 {
     return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
+}
+
+void solveBoard(Board &board, const std::vector<int> &clues)
+{
+    guessSkyscrapers(board, clues, 0, board.fields.size(), board.size());
 }
 
 } // namespace backtracking

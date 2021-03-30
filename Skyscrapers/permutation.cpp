@@ -31,12 +31,25 @@ SolvePuzzle(const std::vector<int> &clues,
         return board.skyscrapers2d();
     }
 
+    solveBoard(board, clues);
+
+    return board.skyscrapers2d();
+}
+
+std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
+{
+    return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
+}
+
+void solveBoard(Board &board, const std::vector<int> &clues)
+{
     auto cluePairs = makeCluePairs(clues);
-    Permutations permutations(boardSize, Span{&cluePairs[0], cluePairs.size()},
+    Permutations permutations(board.size(),
+                              Span{&cluePairs[0], cluePairs.size()},
                               Span{&board.mRows[0], board.mRows.size()});
 
     std::vector<Slice> slices =
-        makeSlices(permutations, board.mRows, cluePairs, boardSize);
+        makeSlices(permutations, board.mRows, cluePairs, board.size());
 
     for (;;) {
         bool allFull = true;
@@ -44,7 +57,7 @@ SolvePuzzle(const std::vector<int> &clues,
             if (slices[i].isSolved()) {
                 continue;
             }
-            slices[i].solveFromPossiblePermutations(boardSize);
+            slices[i].solveFromPossiblePermutations(board.size());
             slices[i].guessSkyscraperOutOfNeighbourNopes();
 
             if (!slices[i].isSolved()) {
@@ -56,13 +69,6 @@ SolvePuzzle(const std::vector<int> &clues,
             break;
         }
     }
-
-    return board.skyscrapers2d();
-}
-
-std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues)
-{
-    return SolvePuzzle(clues, std::vector<std::vector<int>>{}, 0);
 }
 
 } // namespace permutation

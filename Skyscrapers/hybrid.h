@@ -1,11 +1,9 @@
-#ifndef PERMUTATION_H
-#define PERMUTATION_H
+#ifndef HYBRID_H
+#define HYBRID_H
 
 #include <vector>
 
-class Board;
-
-namespace permutation {
+namespace hybrid {
 
 std::vector<std::vector<int>> SolvePuzzle(const std::vector<int> &clues);
 
@@ -13,8 +11,6 @@ std::vector<std::vector<int>>
 SolvePuzzle(const std::vector<int> &clues,
             std::vector<std::vector<int>> startingGrid, int N);
 
-void solveBoard(Board &board, const std::vector<int> &clues);
-
-} // namespace permutation
+} // namespace hybrid
 
 #endif
